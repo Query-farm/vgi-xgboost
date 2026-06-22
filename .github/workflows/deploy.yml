@@ -1,0 +1,26 @@
+name: Deploy
+
+# Deploys to Fly.io on a version tag (e.g. `v0.1.0`) or manual dispatch.
+# Requires a repository secret FLY_API_TOKEN (create with `fly tokens create deploy`)
+# and a one-time `fly volumes create xgboost_models --size 1 --region iad`.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: fly deploy
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Deploy (remote build from Dockerfile)
+        run: flyctl deploy --remote-only --build-arg GIT_COMMIT=${GITHUB_SHA::8}
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
