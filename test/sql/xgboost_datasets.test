@@ -1,0 +1,54 @@
+# name: test/sql/xgboost_datasets.test
+# description: Reference datasets and synthetic generators
+# group: [vgi_xgboost]
+
+require-env VGI_XGBOOST_WORKER
+
+require vgi
+
+require httpfs
+
+statement ok
+ATTACH 'xgboost' AS xgboost (TYPE vgi, LOCATION '${VGI_XGBOOST_WORKER}');
+
+# ---- iris: 150 rows, 3 species ----
+
+query I
+SELECT count(*) FROM xgboost.iris();
+----
+150
+
+query I
+SELECT count(DISTINCT target) FROM xgboost.iris();
+----
+3
+
+# ---- column comments and names are exposed ----
+
+query I
+SELECT count(*) FROM (DESCRIBE SELECT * FROM xgboost.iris());
+----
+7
+
+# ---- a regression dataset has a continuous target ----
+
+query I
+SELECT count(*) FROM xgboost.diabetes();
+----
+442
+
+# ---- generators honour their arguments ----
+
+query II
+SELECT count(*), count(DISTINCT target)
+FROM xgboost.make_classification(n_samples => 200, n_features => 6, n_classes => 4);
+----
+200	4
+
+query I
+SELECT count(*) FROM xgboost.make_regression(n_samples => 120, n_features => 5, noise => 2.0);
+----
+120
+
+statement ok
+DETACH xgboost;

@@ -1,0 +1,77 @@
+# name: test/sql/xgboost_validation.test
+# description: Argument/column validation gives clear errors (not opaque ones)
+# group: [vgi_xgboost]
+
+require-env VGI_XGBOOST_WORKER
+
+require vgi
+
+require httpfs
+
+statement ok
+ATTACH 'xgboost' AS xgboost (TYPE vgi, LOCATION '${VGI_XGBOOST_WORKER}');
+
+statement ok
+CREATE TEMP VIEW tr AS
+  SELECT sample_id, sepal_length_cm AS f1, sepal_width_cm AS f2,
+         petal_length_cm AS f3, petal_width_cm AS f4, target
+  FROM xgboost.iris();
+
+# ---- missing required args -> clear errors ----
+statement error
+SELECT * FROM xgboost.fit((SELECT * FROM tr), estimator := 'xgb_classifier', target := 'target');
+----
+requires 'model_name'
+
+statement error
+SELECT * FROM xgboost.fit((SELECT * FROM tr), model_name := 'm', estimator := 'xgb_classifier');
+----
+requires 'target'
+
+# ---- unknown estimator -> lists valid ones ----
+statement error
+SELECT * FROM xgboost.fit((SELECT * FROM tr), model_name := 'm', estimator := 'nope', target := 'target');
+----
+unknown estimator
+
+# ---- unknown hyperparameter -> lists valid params ----
+statement error
+SELECT * FROM xgboost.fit((SELECT * FROM tr), model_name := 'm', target := 'target', params := '{"nonsense": 5}');
+----
+unknown hyperparameter
+
+# ---- non-numeric feature column -> clear error (not an opaque cast failure) ----
+# (target_name is a text column and becomes a "feature" when not excluded)
+statement error
+SELECT * FROM xgboost.fit((SELECT * FROM xgboost.iris()), model_name := 'mbad',
+                          estimator := 'xgb_classifier', target := 'target', id := 'sample_id');
+----
+must be numeric
+
+statement ok
+SELECT * FROM xgboost.fit((SELECT * FROM tr), model_name := 'valmodel',
+                          estimator := 'xgb_classifier', target := 'target', id := 'sample_id');
+
+# ---- predict with a missing feature column -> clear error ----
+statement error
+SELECT * FROM xgboost.predict((SELECT sample_id, f1, f2, f3 FROM tr), model_name := 'valmodel', id := 'sample_id');
+----
+requires feature column
+
+# predict realigns by name: reordered columns still score every row
+query I
+SELECT count(*) FROM xgboost.predict((SELECT sample_id, f4, f3, f2, f1 FROM tr), model_name := 'valmodel', id := 'sample_id');
+----
+150
+
+# ---- predict on an unknown model -> clear error ----
+statement error
+SELECT * FROM xgboost.predict((SELECT * FROM tr), model_name := 'ghost');
+----
+not found
+
+statement ok
+SELECT * FROM xgboost.drop_model('valmodel');
+
+statement ok
+DETACH xgboost;

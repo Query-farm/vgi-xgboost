@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+build/
+dist/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.claude/
+vendor/
+duckdb_unittest_tempdir/
+models/
+*.coverage
+.coverage
+.test-models/

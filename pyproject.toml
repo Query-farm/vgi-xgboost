@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vgi-xgboost"
+version = "0.1.0"
+description = "A VGI worker exposing XGBoost (train/predict registry + interpretation) to DuckDB/SQL"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "vgi-python[http,oauth]>=0.8",
+    "vgi-rpc[sentry]>=0.20.4",
+    "xgboost>=2.0",
+    "scikit-learn>=1.5",
+    "numpy",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "mypy", "haybarn"]
+
+[tool.setuptools]
+packages = ["vgi_xgboost"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "C4", "SIM"]
+
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+files = ["vgi_xgboost", "xgboost_worker.py", "serve.py"]

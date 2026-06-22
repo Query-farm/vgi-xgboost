@@ -1,0 +1,133 @@
+# name: test/sql/xgboost_models.test
+# description: Supervised fit/predict + model registry end-to-end
+# group: [vgi_xgboost]
+
+require-env VGI_XGBOOST_WORKER
+
+require vgi
+
+require httpfs
+
+statement ok
+ATTACH 'xgboost' AS xgboost (TYPE vgi, LOCATION '${VGI_XGBOOST_WORKER}');
+
+statement ok
+CREATE TEMP VIEW iris_xy AS
+  SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target
+  FROM xgboost.iris();
+
+statement ok
+CREATE TEMP VIEW iris_x AS
+  SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm
+  FROM xgboost.iris();
+
+# ---- fit a classifier; the summary row reports the training shape ----
+
+query III
+SELECT task, n_samples, n_features
+FROM xgboost.fit((SELECT * FROM iris_xy), model_name => 'iris_clf',
+                 estimator => 'xgb_classifier', target => 'target', id => 'sample_id');
+----
+classification	150	4
+
+# ---- it is now in the registry ----
+
+query II
+SELECT model_name, task FROM xgboost.list_models() WHERE model_name = 'iris_clf';
+----
+iris_clf	classification
+
+query I
+SELECT n_classes FROM xgboost.model_info('iris_clf');
+----
+3
+
+# ---- predict: in-sample accuracy is high and all 3 classes appear ----
+
+query I
+SELECT avg(CASE WHEN p.prediction = i.target THEN 1 ELSE 0 END) > 0.9
+FROM xgboost.predict((SELECT * FROM iris_x), model_name => 'iris_clf', id => 'sample_id') p
+JOIN xgboost.iris() i USING (sample_id);
+----
+true
+
+query I
+SELECT count(DISTINCT prediction)
+FROM xgboost.predict((SELECT * FROM iris_x), model_name => 'iris_clf', id => 'sample_id');
+----
+3
+
+# ---- with_proba adds one probability column per class (id + prediction + 3) ----
+
+query I
+SELECT count(*) FROM (DESCRIBE
+  SELECT * FROM xgboost.predict((SELECT * FROM iris_x), model_name => 'iris_clf', id => 'sample_id', with_proba => true));
+----
+5
+
+# probabilities sum to 1 for every row
+query I
+SELECT bool_and(abs(proba_0 + proba_1 + proba_2 - 1) < 1e-6)
+FROM xgboost.predict((SELECT * FROM iris_x), model_name => 'iris_clf', id => 'sample_id', with_proba => true);
+----
+true
+
+# ---- cross_val_predict scores every row out-of-fold, no model stored ----
+
+query I
+SELECT count(*) FROM xgboost.cross_val_predict((SELECT * FROM iris_xy),
+  estimator => 'xgb_classifier', target => 'target', id => 'sample_id', cv => 5);
+----
+150
+
+# ---- a regression model fits and is tagged regression ----
+
+query I
+SELECT task FROM xgboost.fit((SELECT * FROM xgboost.diabetes()), model_name => 'diab_reg',
+                             estimator => 'xgb_regressor', target => 'target', id => 'sample_id');
+----
+regression
+
+# ---- the random-forest-flavoured boosters also fit ----
+
+query I
+SELECT task FROM xgboost.fit((SELECT * FROM xgboost.diabetes()), model_name => 'diab_rf',
+                             estimator => 'xgb_rf_regressor', target => 'target', id => 'sample_id');
+----
+regression
+
+# ---- cross_val_predict works for regression too ----
+
+query I
+SELECT count(*) FROM xgboost.cross_val_predict((SELECT * FROM xgboost.diabetes()),
+  estimator => 'xgb_regressor', target => 'target', id => 'sample_id', cv => 3);
+----
+442
+
+# ---- binary classifier: with_proba yields two probabilities that sum to one ----
+
+statement ok
+SELECT * FROM xgboost.fit((SELECT * EXCLUDE (target_name) FROM xgboost.breast_cancer()), model_name => 'bc_clf',
+                          estimator => 'xgb_classifier', target => 'target', id => 'sample_id');
+
+query I
+SELECT bool_and(abs(proba_0 + proba_1 - 1) < 1e-6) AND count(DISTINCT prediction) = 2
+FROM xgboost.predict((SELECT * EXCLUDE (target, target_name) FROM xgboost.breast_cancer()),
+  model_name => 'bc_clf', id => 'sample_id', with_proba => true);
+----
+true
+
+# ---- drop_model removes it ----
+
+query II
+SELECT model_name, dropped FROM xgboost.drop_model('iris_clf');
+----
+iris_clf	true
+
+query I
+SELECT count(*) FROM xgboost.model_info('iris_clf');
+----
+0
+
+statement ok
+DETACH xgboost;

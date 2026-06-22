@@ -1,0 +1,83 @@
+# name: test/sql/xgboost_importance.test
+# description: feature_importance + SHAP explain (XGBoost-specific extras)
+# group: [vgi_xgboost]
+
+require-env VGI_XGBOOST_WORKER
+
+require vgi
+
+require httpfs
+
+statement ok
+ATTACH 'xgboost' AS xgboost (TYPE vgi, LOCATION '${VGI_XGBOOST_WORKER}');
+
+statement ok
+CREATE TEMP VIEW diab_x AS
+  SELECT sample_id, age, sex, bmi, bp, s1, s2, s3, s4, s5, s6 FROM xgboost.diabetes();
+
+# train a regression model to interpret
+statement ok
+SELECT * FROM xgboost.fit((SELECT * FROM xgboost.diabetes()), model_name => 'diab_imp',
+                          estimator => 'xgb_regressor', target => 'target', id => 'sample_id');
+
+# ---- feature_importance: one ranked row per feature ----
+
+query II
+SELECT count(*), max(rank) FROM xgboost.feature_importance('diab_imp', importance_type => 'gain');
+----
+10	10
+
+# the top-ranked feature has the largest importance
+query I
+SELECT importance = max(importance) OVER () FROM xgboost.feature_importance('diab_imp') WHERE rank = 1;
+----
+true
+
+# weight importance is also available
+query I
+SELECT count(*) FROM xgboost.feature_importance('diab_imp', importance_type => 'weight');
+----
+10
+
+# ---- explain: id + base_value + one contribution column per feature ----
+
+query I
+SELECT count(*) FROM (DESCRIBE
+  SELECT * FROM xgboost.explain((SELECT * FROM diab_x), model_name => 'diab_imp', id => 'sample_id'));
+----
+12
+
+# SHAP additivity: base_value + sum(contributions) == the model's prediction
+query I
+SELECT bool_and(abs(
+    e.base_value + e.contrib_age + e.contrib_sex + e.contrib_bmi + e.contrib_bp
+    + e.contrib_s1 + e.contrib_s2 + e.contrib_s3 + e.contrib_s4 + e.contrib_s5 + e.contrib_s6
+    - p.prediction) < 1.0)
+FROM xgboost.explain((SELECT * FROM diab_x), model_name => 'diab_imp', id => 'sample_id') e
+JOIN xgboost.predict((SELECT * FROM diab_x), model_name => 'diab_imp', id => 'sample_id') p
+  USING (sample_id);
+----
+true
+
+# ---- explain rejects multiclass models with a clear error ----
+
+statement ok
+SELECT * FROM xgboost.fit(
+  (SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target FROM xgboost.iris()),
+  model_name => 'iris_multi', estimator => 'xgb_classifier', target => 'target', id => 'sample_id');
+
+statement error
+SELECT * FROM xgboost.explain(
+  (SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm FROM xgboost.iris()),
+  model_name => 'iris_multi', id => 'sample_id');
+----
+binary classification
+
+statement ok
+SELECT * FROM xgboost.drop_model('diab_imp');
+
+statement ok
+SELECT * FROM xgboost.drop_model('iris_multi');
+
+statement ok
+DETACH xgboost;

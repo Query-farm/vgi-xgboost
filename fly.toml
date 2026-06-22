@@ -1,0 +1,36 @@
+app = 'vgi-xgboost'
+primary_region = 'iad'
+
+[build]
+
+[env]
+  VGI_HTTP_CORS_ORIGINS = '*'
+  # Local-disk model registry; backed by the mounted volume below so models
+  # survive machine restarts. Swap for S3/R2 config in a later phase.
+  XGBOOST_MODELS_DIR = '/data/models'
+
+# Persistent storage for the model registry. Create with:
+#   fly volumes create xgboost_models --size 1 --region iad
+[[mounts]]
+  source = 'xgboost_models'
+  destination = '/data'
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = '15s'
+    interval = '30s'
+    method = 'GET'
+    path = '/health'
+    protocol = 'http'
+    timeout = '5s'
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
