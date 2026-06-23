@@ -1,6 +1,10 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Query-farm/vgi-xgboost/main/assets/vgi-logo.png" alt="Vector Gateway Interface" height="104">
+</p>
+
 # vgi-xgboost
 
-[![CI](https://github.com/rustyconover/vgi-xgboost/actions/workflows/ci.yml/badge.svg)](https://github.com/rustyconover/vgi-xgboost/actions/workflows/ci.yml)
+[![CI](https://github.com/Query-farm/vgi-xgboost/actions/workflows/ci.yml/badge.svg)](https://github.com/Query-farm/vgi-xgboost/actions/workflows/ci.yml)
 
 A [VGI](https://github.com/query-farm/vgi-python) worker that brings
 [XGBoost](https://xgboost.readthedocs.io/) into DuckDB/SQL: train gradient-boosted
