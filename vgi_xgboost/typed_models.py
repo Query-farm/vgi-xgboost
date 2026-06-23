@@ -15,9 +15,9 @@ The generic ``fit`` (JSON ``params``) remains the escape hatch for hyperparamete
 not surfaced here. The curated set per estimator is XGBoost's most-tuned knobs --
 see ``_HPARAMS`` below.
 
-A few SQL-friendly sentinels: ``max_depth := 0`` means "let XGBoost decide its
-default" (mapped to ``None``), and the same for ``n_estimators``/numeric knobs
-left at their sentinel -- so omitting an argument never forces a non-default.
+Every typed argument defaults to XGBoost's own documented default, so the values
+shown in the catalog are truthful and any value is settable literally (no magic
+sentinels).
 """
 
 from __future__ import annotations
@@ -48,23 +48,24 @@ class _HP:
     type: type
     default: Any
     doc: str
-    none_if: Any = _UNSET  # if the SQL value equals this, pass None to XGBoost (use its default)
+    none_if: Any = _UNSET  # if the SQL value equals this, omit the kwarg so XGBoost uses its own default
     kwarg: str | None = None  # XGBoost kwarg name, if it differs from ``name``
 
 
-# XGBoost's most-tuned hyperparameters. Numeric knobs default to a sentinel that
-# maps to None (== XGBoost's own default) so an omitted argument is a true
-# no-op; ``objective`` defaults to "" -> None for the same reason.
+# XGBoost's most-tuned hyperparameters. Each defaults to XGBoost's own documented
+# default, so the values shown in the catalog are truthful and always forwarded.
+# ``objective`` / ``booster`` keep a ``none_if=""`` so the empty string (their SQL
+# default) means "let the task/library decide" rather than passing an empty value.
 _TREE_BOOSTER = [
-    _HP("n_estimators", int, 0, "Number of boosting rounds (0 = XGBoost default).", none_if=0),
-    _HP("max_depth", int, 0, "Max tree depth (0 = XGBoost default).", none_if=0),
-    _HP("learning_rate", float, 0.0, "Boosting learning rate / eta (0 = XGBoost default).", none_if=0.0),
-    _HP("subsample", float, 0.0, "Row subsample ratio per tree (0 = XGBoost default).", none_if=0.0),
-    _HP("colsample_bytree", float, 0.0, "Column subsample ratio per tree (0 = XGBoost default).", none_if=0.0),
-    _HP("min_child_weight", float, -1.0, "Min sum of instance weight in a child (-1 = default).", none_if=-1.0),
-    _HP("gamma", float, -1.0, "Min loss reduction to split (-1 = XGBoost default).", none_if=-1.0),
-    _HP("reg_alpha", float, -1.0, "L1 regularization on weights (-1 = XGBoost default).", none_if=-1.0),
-    _HP("reg_lambda", float, -1.0, "L2 regularization on weights (-1 = XGBoost default).", none_if=-1.0),
+    _HP("n_estimators", int, 100, "Number of boosting rounds."),
+    _HP("max_depth", int, 6, "Max tree depth."),
+    _HP("learning_rate", float, 0.3, "Boosting learning rate / eta."),
+    _HP("subsample", float, 1.0, "Row subsample ratio per tree."),
+    _HP("colsample_bytree", float, 1.0, "Column subsample ratio per tree."),
+    _HP("min_child_weight", float, 1.0, "Min sum of instance weight in a child."),
+    _HP("gamma", float, 0.0, "Min loss reduction to split."),
+    _HP("reg_alpha", float, 0.0, "L1 regularization on weights."),
+    _HP("reg_lambda", float, 1.0, "L2 regularization on weights."),
     _HP("objective", str, "", "Learning objective (e.g. 'binary:logistic'); '' = task default.", none_if=""),
     _HP("booster", str, "", "Booster: 'gbtree', 'gblinear', or 'dart' ('' = default).", none_if=""),
     _HP("tree_method", str, "hist", "Tree construction algorithm ('hist', 'approx', 'exact')."),
