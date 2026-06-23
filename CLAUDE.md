@@ -14,8 +14,9 @@ that complexity is gone here now those packages are on PyPI).
 
 XGBoost's value is gradient-boosted train/predict, so this worker is focused on a
 **model registry** (fit/predict/cross_val_predict/cross_val_score), **typed
-fit + hyperparameter search**, and XGBoost-specific interpretation (feature
-importance, SHAP, permutation importance). It deliberately does *not* mirror
+fit + discriminated-union hyperparameter search**, and interpretation
+(feature_importance, SHAP `explain`, permutation_importance, partial_dependence).
+It deliberately does *not* mirror
 vgi-sklearn's metrics/transforms surface — those are scikit-learn's, and
 vgi-sklearn already exposes them. A small datasets module (reusing scikit-learn's
 bundled data) is kept only so demos and the SQL tests are self-contained.
@@ -29,9 +30,9 @@ vgi_xgboost/
   datasets.py         dataset table functions (toy sets + make_* generators)
   models.py           fit / predict / cross_val_predict / cross_val_score + registry mgmt
   typed_models.py     generated fit_<estimator> functions with typed hyperparams
-  search.py           grid_search / randomized_search (single-estimator JSON grid)
+  search.py           grid_search / randomized_search (discriminated-union estimator arg via _GRID_UNION/_HPARAMS)
   features.py         native categorical + missing-value feature assembly (pandas)
-  importance.py       feature_importance + explain (wide SHAP) + shap_values (long) + permutation_importance
+  importance.py       feature_importance + explain (long-format SHAP) + permutation_importance + partial_dependence
   registry.py         ModelStore + LocalDiskStore (S3/R2 seam) + native serialization + model-BLOB pack/unpack
   buffering.py        shared sink/combine/serialize helpers
   schema_utils.py     pa.Field comment helper, name sanitisation, NoArgs
@@ -47,23 +48,32 @@ To add functions: implement in the relevant `vgi_xgboost/*.py`, export a
 | Need | Primitive | Example here |
 | --- | --- | --- |
 | Emit rows, no input | `TableFunctionGenerator` (`@bind_fixed_schema` / `@init_single_worker`, or custom `on_bind` for schema-from-args) | `datasets.py`, `importance.FeatureImportance` |
-| `fit` (needs whole input) | `TableBufferingFunction` via `buffering.SinkBuffer` | `models.FitModel`, `CrossValPredict`, `CrossValScore`, typed `fit_<estimator>`, `search.GridSearch` |
-| Score/explain a stream with an already-fit model | `TableInOutGenerator` | `models.PredictModel`, `importance.ExplainModel`, `ShapValues` |
+| `fit` / buffer whole input | `TableBufferingFunction` via `buffering.SinkBuffer` | `models.FitModel`, `CrossValPredict`, `CrossValScore`, typed `fit_<estimator>`, `search.GridSearch`/`RandomizedSearch`, `importance.PermutationImportance`/`PartialDependence` |
+| Score/explain a stream with an already-fit model | `TableInOutGenerator` | `models.PredictModel`, `importance.ExplainModel` |
 
 Conventions for fit/predict/explain: input relation is X via a `(SELECT ...)`
 subquery (Arg(0)); name `target` (features = the rest) and an optional `id`
-passthrough; hyperparameters as a JSON-string arg (generic `fit`/`search`) or
-typed named args (`fit_<estimator>`).
+passthrough; hyperparameters as a JSON-string arg on the generic `fit`, or typed
+named args on `fit_<estimator>`. `grid_search`/`randomized_search` instead take a
+typed **discriminated-union** estimator arg (see below), not JSON.
 
 ## Models: registry + BLOB + typed functions + search
 
 - **fit always returns a `model` BLOB** (estimator + metadata packed by
   `registry.pack_model`) and persists to the registry only if `model_name` is
-  given (so `model_name` is optional). `predict` / `explain` / `shap_values` /
-  `permutation_importance` take **either** `model_name :=` or `model :=` (a BLOB);
-  `unpack_meta` reads metadata at bind, `unpack_model` loads the estimator at
-  process. Pass a BLOB into a table function via `SET VARIABLE`+`getvariable()`
-  (a table function gets only one subquery slot — the table input).
+  given (so `model_name` is optional). `predict` / `explain` / `feature_importance`
+  / `permutation_importance` / `partial_dependence` take **either** `model_name :=`
+  or `model :=` (a BLOB); `unpack_meta` reads metadata at bind, `unpack_model`
+  loads the estimator at process. Pass a BLOB into a table function via
+  `SET VARIABLE`+`getvariable()` (a table function gets only one subquery slot —
+  the table input).
+- **Classification labels can be any dtype** (string, int, bool). `models._target_array`
+  builds a stable sorted `classes` list and label-encodes the target to `0..n-1`
+  codes for XGBoost (which requires contiguous int labels); `ModelMetadata.classes`
+  stores the *original* labels. `predict` decodes `code → classes[code]` and types
+  the `prediction` column from the label dtype (VARCHAR for strings, BIGINT for
+  ints); `with_proba` emits `proba_<original_label>` columns. `permutation_importance`
+  re-encodes string targets through `meta.classes`.
 - **Serialization is XGBoost-native, not pickle** (`registry._native_dumps/_loads`
   via `Booster.save_model`/`load_model` to a temp `.ubj`). UBJSON is XGBoost's own
   forward-compatible format and loads without arbitrary code execution. The
@@ -72,19 +82,23 @@ typed named args (`fit_<estimator>`).
 - **Typed `fit_<estimator>` functions** are generated in `typed_models.py` from
   the `_HPARAMS` spec via `types.new_class(name, (SinkBuffer[args, DrainState],),
   ...)` — plain `type()` can't resolve the subscripted-generic base. Each shares
-  `models._fit_and_emit`. Numeric knobs use a sentinel default (`n_estimators := 0`,
-  `gamma := -1.0`, etc.) that is *dropped* so the hyperparameter stays at XGBoost's
-  own default — an omitted arg is a true no-op. `test_every_typed_param_is_valid`
-  guards that every exposed param is real for its estimator.
-- **`search.grid_search` / `randomized_search`** wrap sklearn's
-  `GridSearchCV`/`RandomizedSearchCV`. The grid is a **JSON object** arg
-  (`grid := '{"n_estimators": [50, 100]}'`), *not* vgi-sklearn's discriminated-
-  union `union_value` surface: the released PyPI vgi-python (0.8.2) does **not**
-  export `TaggedUnion` / preserve union tags, so the union approach is unavailable
-  here. Returns the CV leaderboard (one row per combo) with the refit best model
-  BLOB on the best row — grab it with `WHERE model IS NOT NULL`. When a vgi-python
-  with union-tag decoding is pinned, the union form from vgi-sklearn's `search.py`
-  could replace this.
+  `models._fit_and_emit`. Typed knobs carry XGBoost's **real documented defaults**
+  (`n_estimators=100, max_depth=6, learning_rate=0.3, …`) — the catalog shows the
+  true default and every value is forwarded; the only sentinel left is `none_if=""`
+  on `objective`/`booster` (empty string → keep the task default). A param-validity
+  test guards that every exposed param is real for its estimator.
+- **`search.grid_search` / `randomized_search` are a discriminated union** (same
+  design as vgi-sklearn's `search.py`). The `estimator` arg is a sparse Arrow union
+  `_GRID_UNION` (one member per estimator from `_HPARAMS`, each field a
+  `list<scalar>`); SQL calls it `union_value(<estimator> := {param: [values]})`.
+  The worker reads it as a `vgi.TaggedUnion` (`.tag` = estimator, `.value` = grid
+  dict); `_param_grid` translates a member into a sklearn grid (omitted/NULL params
+  stay at their default). Returns the CV leaderboard (one row per combo) with the
+  refit best model BLOB on the best row — grab it with `WHERE model IS NOT NULL`.
+  `randomized_search` adds `n_iter` (capped at the grid size) + `random_state`.
+  **Requires `vgi-python >=0.8.3`** (ships `vgi.TaggedUnion` / union-tag-preserving
+  decode) — already the pin. Dense unions are unsupported by the C++ extension;
+  `union_value` produces sparse, which works.
 - **Native categorical + missing values (`features.py`).** Feature assembly builds
   a **pandas DataFrame** (pandas is a hard dep) so XGBoost's `enable_categorical`
   + `tree_method='hist'` (both in `_COMMON_DEFAULTS`) handle string columns
@@ -98,25 +112,39 @@ typed named args (`fit_<estimator>`).
   (one leaf index per tree as a `list<int>` column — uses the Booster, not the
   sklearn `predict()`, which rejects `pred_leaf`). The modes are mutually
   exclusive (validated at bind).
-- **SHAP:** `explain` is wide (`base_value` + one `contrib_<feature>` per row);
-  `shap_values` is long (`(id, feature, shap_value, base_value)`). Both use
-  `booster.predict(DMatrix(x, enable_categorical=True), pred_contribs=True)` and
-  are regression / binary only (multiclass contribs are 3D — rejected at bind).
+- **SHAP:** a single `explain` in **long format** — optional `<id>`, optional
+  `class` (only for multiclass), `feature`, `shap_value`, `base_value`, one row per
+  (row, [class], feature). Uses `booster.predict(DMatrix(x,
+  enable_categorical=True), pred_contribs=True)`; for multiclass the 3-D contribs
+  array is unrolled into one row per (row, class, feature). (There is no separate
+  wide `shap_values` function — it was removed.)
+- **`feature_importance` and `permutation_importance` are ranked** (a `rank`
+  int32 column, sorted by importance desc) so server-side output is already
+  ordered. `partial_dependence` (`importance.py`, buffering) shows how a feature
+  moves the prediction over a grid: numeric-feature-only (categorical → clear
+  error), output `(feature_value, class, partial_dependence)` with one curve per
+  class for multiclass / NULL `class` for regression+binary.
+- **Schema consistency:** `_FIT_SCHEMA` and `_MODEL_INFO_SCHEMA` agree —
+  `n_samples`/`n_features`/`n_classes` are `int64` and `task` is a plain `string`,
+  so `fit` output joins cleanly to `model_info` (the `rank` columns are
+  intentionally `int32`).
 
 ## Sharp edges (read before debugging)
 
 1. **Don't name the worker module `xgboost.py`.** It would shadow the real
    `xgboost` package import. The entry point is `xgboost_worker.py`; the package
    is `vgi_xgboost`.
-2. **XGBoost classification labels must be `0..n_classes-1`.** Unlike some
-   sklearn estimators, `XGBClassifier.fit` errors on arbitrary integer labels.
-   `_xy` rounds the target to int but does *not* re-encode; the bundled datasets
-   are already 0-based. If you add a dataset with non-contiguous labels, encode
-   it first.
-3. **`explain` / `shap_values` are regression / binary only.** `booster.predict(...,
-   pred_contribs=True)` returns a 2D `(n_rows, n_features+1)` array for those;
-   multiclass returns a 3D array. `on_bind` rejects multiclass with a clear error.
-   The **last** column of the contribs array is the base value.
+2. **Labels are label-encoded internally; you no longer pre-encode.** `XGBClassifier.fit`
+   requires contiguous `0..n-1` int labels, so `models._target_array` builds a
+   stable sorted `classes` and maps the target to codes; `predict` decodes back via
+   `_decode_labels`. So string/non-contiguous labels just work — don't add a manual
+   re-encoding step (it would double-encode). The prediction column dtype follows
+   the original label dtype.
+3. **`explain` supports multiclass.** `booster.predict(..., pred_contribs=True)`
+   returns a 2-D `(n_rows, n_features+1)` array for regression/binary and a 3-D
+   array for multiclass; `explain` unrolls both into long rows (a `class` column
+   appears for multiclass). The **last** contribs column is the base value. (No
+   multiclass rejection, and no wide `shap_values` — both were removed.)
 4. **`_xy` now returns a pandas DataFrame** (was a numpy matrix), so the booster
    sees the real feature names and categorical dtypes. `feature_importance` still
    maps `f{i}` → `feature_names[i]` defensively, but `get_score()` may also key by
