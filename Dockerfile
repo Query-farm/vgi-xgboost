@@ -6,7 +6,7 @@ ENV PYTHONUNBUFFERED=1
 # vgi-python / vgi-rpc are published on PyPI, so install everything directly —
 # no vendoring or local wheel building required.
 RUN pip install --no-cache-dir \
-        "vgi-python[http,oauth]>=0.8.2" \
+        "vgi-python[http,oauth]>=0.8.3" \
         "vgi-rpc[sentry]>=0.20.4" \
         "xgboost>=2.0" \
         "scikit-learn>=1.5" \
