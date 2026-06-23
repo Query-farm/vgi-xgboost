@@ -34,10 +34,10 @@ JOIN xgboost.iris() i USING (sample_id);
 ----
 true
 
-# max_depth := 0 means "XGBoost default" (sentinel dropped) and must not error
+# typed args default to XGBoost's real defaults; an all-default fit just works
 query I
 SELECT task FROM xgboost.fit_xgb_classifier((SELECT * FROM tr),
-     target := 'target', id := 'sample_id', max_depth := 0) LIMIT 1;
+     target := 'target', id := 'sample_id') LIMIT 1;
 ----
 classification
 

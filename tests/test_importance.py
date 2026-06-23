@@ -14,7 +14,7 @@ from xgboost import XGBClassifier
 
 from tests.harness import invoke_table_function
 from vgi_xgboost.importance import FeatureImportance
-from vgi_xgboost.registry import LocalDiskStore, ModelMetadata, set_store
+from vgi_xgboost.registry import LocalDiskStore, ModelMetadata, pack_model, set_store
 
 
 @pytest.fixture()
@@ -25,26 +25,29 @@ def registry(tmp_path):
     set_store(None)
 
 
-def _save_model(store: LocalDiskStore) -> None:
+def _build_model() -> tuple[XGBClassifier, ModelMetadata]:
     rng = np.random.default_rng(0)
     # feature 0 perfectly separates the classes; features 1-2 are noise.
     x = np.column_stack([np.r_[np.zeros(20), np.ones(20)], rng.normal(size=40), rng.normal(size=40)])
     y = np.r_[np.zeros(20), np.ones(20)].astype(int)
     est = XGBClassifier(n_estimators=10, random_state=0).fit(x, y)
-    store.save(
-        est,
-        ModelMetadata(
-            name="m",
-            estimator="xgb_classifier",
-            task="classification",
-            target="y",
-            feature_names=["signal", "noise_a", "noise_b"],
-            classes=[0, 1],
-            n_samples=40,
-            n_features=3,
-            xgboost_version="x",
-        ),
+    meta = ModelMetadata(
+        name="m",
+        estimator="xgb_classifier",
+        task="classification",
+        target="y",
+        feature_names=["signal", "noise_a", "noise_b"],
+        classes=[0, 1],
+        n_samples=40,
+        n_features=3,
+        xgboost_version="x",
     )
+    return est, meta
+
+
+def _save_model(store: LocalDiskStore) -> None:
+    est, meta = _build_model()
+    store.save(est, meta)
 
 
 class TestFeatureImportance:
@@ -67,3 +70,15 @@ class TestFeatureImportance:
     def test_unknown_model(self, registry) -> None:
         with pytest.raises(ValueError, match="not found"):
             invoke_table_function(FeatureImportance, positional=(pa.scalar("nope"),))
+
+    def test_via_model_blob(self, registry) -> None:
+        # model_name '' + a model BLOB resolves the model without the registry.
+        est, meta = _build_model()
+        blob = pack_model(est, meta)
+        table = invoke_table_function(
+            FeatureImportance,
+            positional=(pa.scalar(""),),
+            named={"model": pa.scalar(blob, type=pa.binary())},
+        )
+        assert table.column("feature").to_pylist()[0] == "signal"
+        assert table.column("rank").to_pylist() == [1, 2, 3]

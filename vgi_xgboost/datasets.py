@@ -50,8 +50,7 @@ def _feature_labels(bunch: Any, n_features: int) -> list[str]:
 def _feature_fields(labels: list[str]) -> list[pa.Field]:
     cols = dedupe_names([snake_case(label) for label in labels])
     return [
-        field(col, pa.float64(), f"Feature: {label}.", nullable=False)
-        for col, label in zip(cols, labels, strict=True)
+        field(col, pa.float64(), f"Feature: {label}.", nullable=False) for col, label in zip(cols, labels, strict=True)
     ]
 
 

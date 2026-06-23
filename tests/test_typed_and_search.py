@@ -7,12 +7,13 @@ translation helpers and the registry BLOB round-trip directly.
 from __future__ import annotations
 
 import numpy as np
+import pyarrow as pa
 import pytest
 from xgboost import XGBClassifier
 
 from vgi_xgboost.models import _ESTIMATORS, build_estimator
 from vgi_xgboost.registry import ModelMetadata, pack_model, unpack_meta, unpack_model
-from vgi_xgboost.search import _grid_size, _parse_grid
+from vgi_xgboost.search import _GRID_UNION, _grid_size, _member_struct, _param_grid
 from vgi_xgboost.typed_models import _HPARAMS, TYPED_FIT_FUNCTIONS, _estimator_kwargs, _make_args_class
 
 
@@ -73,41 +74,100 @@ class TestTypedFit:
             for hp in spec:
                 assert (hp.kwarg or hp.name) in valid, f"{est_name}.{hp.name} not a real param"
 
-    def test_sentinels_drop_to_defaults(self) -> None:
+    def test_defaults_are_xgboost_real_defaults(self) -> None:
+        # The typed defaults are XGBoost's documented defaults (no magic sentinels).
+        spec = {hp.name: hp for hp in _HPARAMS["xgb_classifier"]}
+        assert spec["n_estimators"].default == 100
+        assert spec["max_depth"].default == 6
+        assert spec["learning_rate"].default == 0.3
+        assert spec["subsample"].default == 1.0
+        assert spec["colsample_bytree"].default == 1.0
+        assert spec["min_child_weight"].default == 1.0
+        assert spec["gamma"].default == 0.0
+        assert spec["reg_alpha"].default == 0.0
+        assert spec["reg_lambda"].default == 1.0
+
+    def test_default_args_forward_real_values(self) -> None:
         spec = _HPARAMS["xgb_classifier"]
         args_cls = _make_args_class("xgb_classifier", spec)
-        # all-default args: every none_if sentinel should be dropped, leaving only tree_method + random_state
         args = args_cls(data=None)  # type: ignore[call-arg]
         kw = _estimator_kwargs(spec, args)
-        assert "n_estimators" not in kw  # 0 sentinel dropped
+        # numeric knobs are always forwarded at their real default (no sentinel drop)
+        assert kw["n_estimators"] == 100
+        assert kw["max_depth"] == 6
+        assert kw["learning_rate"] == 0.3
+        # objective/booster '' still means "let the task/library decide"
+        assert "objective" not in kw
+        assert "booster" not in kw
         assert kw["tree_method"] == "hist"
-        assert kw["random_state"] == 0
+
+    def test_default_fit_matches_bare_estimator(self) -> None:
+        spec = _HPARAMS["xgb_classifier"]
+        args_cls = _make_args_class("xgb_classifier", spec)
+        kw = _estimator_kwargs(spec, args_cls(data=None))  # type: ignore[call-arg]
+        _task, est_cls, defaults = _ESTIMATORS["xgb_classifier"]
+        typed = est_cls(**{**defaults, **kw})
+        bare = est_cls(**defaults)
+        x = np.array([[0.0], [1.0], [0.0], [1.0], [0.2], [0.9]])
+        y = np.array([0, 1, 0, 1, 0, 1])
+        assert np.array_equal(typed.fit(x, y).predict(x), bare.fit(x, y).predict(x))
 
     def test_explicit_values_passed_through(self) -> None:
         spec = _HPARAMS["xgb_classifier"]
         args_cls = _make_args_class("xgb_classifier", spec)
-        args = args_cls(data=None, n_estimators=300, max_depth=6, learning_rate=0.1)  # type: ignore[call-arg]
+        args = args_cls(data=None, n_estimators=300, max_depth=4, learning_rate=0.1)  # type: ignore[call-arg]
         kw = _estimator_kwargs(spec, args)
         assert kw["n_estimators"] == 300
-        assert kw["max_depth"] == 6
+        assert kw["max_depth"] == 4
         assert kw["learning_rate"] == 0.1
 
 
+class TestGridUnionType:
+    def test_member_per_estimator(self) -> None:
+        names = [_GRID_UNION.field(i).name for i in range(_GRID_UNION.num_fields)]
+        assert set(names) == set(_HPARAMS)
+
+    def test_members_are_structs_of_lists(self) -> None:
+        idx = next(i for i in range(_GRID_UNION.num_fields) if _GRID_UNION.field(i).name == "xgb_classifier")
+        member = _GRID_UNION.field(idx).type
+        ne = member.field(member.get_field_index("n_estimators")).type
+        assert pa.types.is_list(ne)
+        assert pa.types.is_integer(ne.value_type)
+        lr = member.field(member.get_field_index("learning_rate")).type
+        assert pa.types.is_floating(lr.value_type)
+
+    def test_member_struct_matches_hparams(self) -> None:
+        struct = _member_struct(_HPARAMS["xgb_classifier"])
+        assert [struct.field(i).name for i in range(struct.num_fields)] == [
+            hp.name for hp in _HPARAMS["xgb_classifier"]
+        ]
+
+
+class TestParamGrid:
+    def test_only_listed_params_searched(self) -> None:
+        grid = _param_grid("xgb_classifier", {"n_estimators": [50, 100], "max_depth": None})
+        assert grid == {"n_estimators": [50, 100]}  # max_depth (None) omitted -> estimator default
+
+    def test_values_pass_through(self) -> None:
+        # No sentinels left to translate: values forward straight through.
+        grid = _param_grid("xgb_classifier", {"max_depth": [3, 5, 8]})
+        assert grid["max_depth"] == [3, 5, 8]
+
+    def test_none_if_drops_empty_objective(self) -> None:
+        # objective '' (its none_if) is dropped element-wise.
+        grid = _param_grid("xgb_classifier", {"objective": ["", "binary:logistic"]})
+        assert grid["objective"] == ["binary:logistic"]
+
+    def test_empty_value_is_empty_grid(self) -> None:
+        assert _param_grid("xgb_classifier", None) == {}
+
+
 class TestSearchHelpers:
-    def test_parse_grid_wraps_scalars(self) -> None:
-        assert _parse_grid('{"n_estimators": [50, 100], "max_depth": 3}') == {
-            "n_estimators": [50, 100],
-            "max_depth": [3],
-        }
-
-    def test_parse_grid_rejects_empty(self) -> None:
-        with pytest.raises(ValueError, match="required"):
-            _parse_grid("")
-        with pytest.raises(ValueError, match="non-empty JSON object"):
-            _parse_grid("[]")
-
     def test_grid_size(self) -> None:
         assert _grid_size({"a": [1, 2, 3], "b": [4, 5]}) == 6
+
+    def test_empty_grid_is_one(self) -> None:
+        assert _grid_size({}) == 1
 
 
 class TestNativeSerializationDefaults:

@@ -14,7 +14,8 @@ general ML library. The implementation is split by area:
   hyperparameters (cross-validated leaderboard + refit best model)
 - ``features``     -- native categorical + missing-value feature assembly
 - ``importance``   -- XGBoost-specific extras: ``feature_importance``, SHAP
-  ``explain`` / ``shap_values`` (long format), and ``permutation_importance``
+  ``explain`` (long format, multiclass), ``permutation_importance``, and
+  ``partial_dependence``
 - ``registry``     -- pluggable model store (local disk now, S3/R2 later); models
   serialize with XGBoost's native ``save_model`` (not pickle)
 
