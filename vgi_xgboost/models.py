@@ -9,8 +9,9 @@
 Column roles follow the project convention: name the ``target`` column (for
 fit / cross_val_predict) and optionally an ``id`` column to carry through; every
 other column is a numeric feature. Hyperparameters are passed as a JSON string.
-Classification targets must be integer class labels encoded ``0..n_classes-1``
-(XGBoost's requirement); the bundled datasets already are.
+Classification targets may be **any label dtype** (string, int, …): they are
+label-encoded to ``0..n_classes-1`` codes for XGBoost, the original ordered
+labels are stored in the model, and ``predict`` decodes back to those labels.
 
     SELECT * FROM xgboost.fit((SELECT * FROM training), model_name => 'iris_clf',
                               estimator => 'xgb_classifier', target => 'species', id => 'id');
@@ -113,23 +114,49 @@ def build_estimator(name: str, params: dict[str, Any]) -> tuple[str, Any]:
         raise ValueError(f"invalid hyperparameters for {name!r}: {exc}") from exc
 
 
+def _target_array(column: pa.ChunkedArray | pa.Array, task: str) -> tuple[np.ndarray, list[Any] | None]:
+    """Turn the target column into ``(y, classes)``.
+
+    For regression ``y`` is float64 and ``classes`` is ``None``. For
+    classification any label dtype is accepted: the labels are sorted into a
+    stable order, label-encoded to integer codes ``0..n_classes-1`` (XGBoost
+    requires contiguous integer codes), and the *original* ordered labels are
+    returned as ``classes`` so predictions can be decoded back. A friendly error
+    is raised when the target has no usable (non-null) labels.
+    """
+    raw = column.to_pylist()
+    if task != CLASSIFICATION:
+        return np.asarray(raw, dtype=float), None
+    labels = [v for v in raw if v is not None]
+    if not labels:
+        raise ValueError("classification target has no usable (non-null) labels")
+    if len({type(v) for v in labels}) > 1:
+        raise ValueError("classification target mixes incompatible label types; use a single label dtype")
+    try:
+        classes = sorted(set(labels))
+    except TypeError as exc:
+        raise ValueError(f"classification target labels are not orderable: {exc}") from exc
+    code_of = {c: i for i, c in enumerate(classes)}
+    if any(v is None for v in raw):
+        raise ValueError("classification target contains NULL labels; drop or impute them before fitting")
+    y = np.asarray([code_of[v] for v in raw], dtype=int)
+    return y, classes
+
+
 def _xy(
     table: pa.Table, feature_names: list[str], target: str, task: str
-) -> tuple[Any, np.ndarray, list[bool], list[list[str] | None]]:
-    """Assemble ``(X, y, categorical_mask, categories)`` from a buffered table.
+) -> tuple[Any, np.ndarray, list[bool], list[list[str] | None], list[Any] | None]:
+    """Assemble ``(X, y, categorical_mask, categories, classes)`` from a buffered table.
 
     ``X`` is a pandas DataFrame so XGBoost can use native categorical + missing
     handling. ``categories`` records each categorical column's category list for
-    reproducible scoring later.
+    reproducible scoring later. For classification, ``y`` is integer codes and
+    ``classes`` the original ordered labels (``None`` for regression).
     """
     cat_mask = categorical_mask([table.schema.field(n).type for n in feature_names])
     x, categories = build_x_fit(table, feature_names, cat_mask)
-    y = np.asarray(table.column(target).to_numpy(zero_copy_only=False))
-    if task == CLASSIFICATION:  # noqa: SIM108 — explicit branches read clearer than a long ternary
-        y = np.rint(y.astype(float)).astype(int)
-    else:
-        y = y.astype(float)
-    return x, y, cat_mask, categories
+    y, classes = _target_array(table.column(target), task)
+    return x, y, cat_mask, categories, classes
 
 
 def _features_excluding(input_schema: pa.Schema, *exclude: str) -> list[str]:
@@ -137,10 +164,24 @@ def _features_excluding(input_schema: pa.Schema, *exclude: str) -> list[str]:
     return [n for n in input_schema.names if n not in drop]
 
 
-def _prediction_field(task: str) -> pa.Field:
+def _label_arrow_type(classes: list[Any] | None) -> pa.DataType:
+    """Arrow type for a decoded class label, inferred from the stored class labels."""
+    if classes and all(isinstance(c, str) for c in classes):
+        return pa.string()
+    return pa.int64()
+
+
+def _prediction_field(task: str, classes: list[Any] | None = None) -> pa.Field:
     if task == CLASSIFICATION:
-        return sfield("prediction", pa.int64(), "Predicted class label.", nullable=False)
+        return sfield("prediction", _label_arrow_type(classes), "Predicted class label.", nullable=False)
     return sfield("prediction", pa.float64(), "Predicted value.", nullable=False)
+
+
+def _decode_labels(codes: Any, classes: list[Any] | None) -> list[Any]:
+    """Map integer class codes back to the original labels (identity if no classes)."""
+    if classes is None:
+        return [int(v) for v in codes]
+    return [classes[int(v)] for v in codes]
 
 
 # ===========================================================================
@@ -201,10 +242,9 @@ def _fit_and_emit(
     if table is None or table.num_rows == 0:
         raise ValueError("fit received no training rows")
     feats = _features_excluding(input_schema, target, id_col)
-    x, y, cat_mask, categories = _xy(table, feats, target, task)
+    x, y, cat_mask, categories, classes = _xy(table, feats, target, task)
     estimator.fit(x, y)
     train_score = float(estimator.score(x, y))
-    classes = [int(c) for c in estimator.classes_] if task == CLASSIFICATION else None
 
     meta = ModelMetadata(
         name=model_name,
@@ -276,9 +316,7 @@ class FitModel(SinkBuffer[FitArgs, DrainState]):
         input_schema = params.bind_call.input_schema
         assert input_schema is not None
         if a.target not in input_schema.names:
-            raise ValueError(
-                f"target column {a.target!r} not found in input; columns: {', '.join(input_schema.names)}"
-            )
+            raise ValueError(f"target column {a.target!r} not found in input; columns: {', '.join(input_schema.names)}")
         return BindResponse(output_schema=_FIT_SCHEMA)
 
     @classmethod
@@ -410,7 +448,7 @@ class PredictModel(TableInOutGenerator[PredictArgs]):
         elif a.output_margin:
             fields.append(sfield("margin", pa.float64(), "Raw (untransformed) margin score.", nullable=False))
         else:
-            fields.append(_prediction_field(meta.task))
+            fields.append(_prediction_field(meta.task, meta.classes))
         if a.with_proba and meta.task == CLASSIFICATION:
             for c in cls._proba_classes(meta):
                 fields.append(sfield(f"proba_{c}", pa.float64(), f"P(class = {c}).", nullable=False))
@@ -472,7 +510,7 @@ class PredictModel(TableInOutGenerator[PredictArgs]):
         else:
             preds = estimator.predict(x)
             if meta.task == CLASSIFICATION:
-                columns["prediction"] = [int(v) for v in preds]
+                columns["prediction"] = _decode_labels(preds, meta.classes)
             else:
                 columns["prediction"] = [float(v) for v in preds]
 
@@ -526,13 +564,23 @@ class CrossValPredict(SinkBuffer[CrossValArgs, DrainState]):
         input_schema = params.bind_call.input_schema
         assert input_schema is not None
         if a.target not in input_schema.names:
-            raise ValueError(
-                f"target column {a.target!r} not found in input; columns: {', '.join(input_schema.names)}"
-            )
+            raise ValueError(f"target column {a.target!r} not found in input; columns: {', '.join(input_schema.names)}")
         fields: list[pa.Field] = []
         if a.id:
             fields.append(input_schema.field(a.id))
-        fields.append(_prediction_field(task))
+        # For classification the label dtype isn't known until the data is read,
+        # so the cross_val_predict output column is typed from the target column's
+        # Arrow type (string -> VARCHAR, otherwise BIGINT).
+        if task == CLASSIFICATION:
+            target_type = input_schema.field(a.target).type
+            label_type = (
+                pa.string()
+                if (pa.types.is_string(target_type) or pa.types.is_large_string(target_type))
+                else pa.int64()
+            )
+            fields.append(sfield("prediction", label_type, "Predicted class label.", nullable=False))
+        else:
+            fields.append(_prediction_field(task))
         return BindResponse(output_schema=pa.schema(fields))
 
     @classmethod
@@ -560,19 +608,17 @@ class CrossValPredict(SinkBuffer[CrossValArgs, DrainState]):
         table = cls.buffered_table(params, input_schema)
         if table is None or table.num_rows == 0:
             out.emit(
-                pa.RecordBatch.from_pydict(
-                    {n: [] for n in params.output_schema.names}, schema=params.output_schema
-                )
+                pa.RecordBatch.from_pydict({n: [] for n in params.output_schema.names}, schema=params.output_schema)
             )
             return
 
-        x, y, _cat_mask, _categories = _xy(table, feats, a.target, task)
+        x, y, _cat_mask, _categories, classes = _xy(table, feats, a.target, task)
         preds = sk_cross_val_predict(estimator, x, y, cv=a.cv)
 
         columns: dict[str, list[Any]] = {}
         if a.id:
             columns[a.id] = table.column(a.id).to_pylist()
-        columns["prediction"] = [int(v) for v in preds] if task == CLASSIFICATION else [float(v) for v in preds]
+        columns["prediction"] = _decode_labels(preds, classes) if task == CLASSIFICATION else [float(v) for v in preds]
         out.emit(pa.RecordBatch.from_pydict(columns, schema=params.output_schema))
 
 
@@ -627,9 +673,7 @@ class CrossValScore(SinkBuffer[CrossValScoreArgs, DrainState]):
         input_schema = params.bind_call.input_schema
         assert input_schema is not None
         if a.target not in input_schema.names:
-            raise ValueError(
-                f"target column {a.target!r} not found in input; columns: {', '.join(input_schema.names)}"
-            )
+            raise ValueError(f"target column {a.target!r} not found in input; columns: {', '.join(input_schema.names)}")
         return BindResponse(output_schema=_CV_SCORE_SCHEMA)
 
     @classmethod
@@ -660,7 +704,7 @@ class CrossValScore(SinkBuffer[CrossValScoreArgs, DrainState]):
         if table is None or table.num_rows == 0:
             raise ValueError("cross_val_score received no training rows")
 
-        x, y, _cat_mask, _categories = _xy(table, feats, a.target, task)
+        x, y, _cat_mask, _categories, _classes = _xy(table, feats, a.target, task)
         scores = sk_cross_val_score(estimator, x, y, cv=a.cv, scoring=(a.scoring or None))
         out.emit(
             pa.RecordBatch.from_pydict(
@@ -678,11 +722,11 @@ _MODEL_INFO_SCHEMA = pa.schema(
     [
         sfield("model_name", pa.string(), "Stored model name.", nullable=False),
         sfield("estimator", pa.string(), "Estimator type.", nullable=False),
-        sfield("task", pa.dictionary(pa.int8(), pa.string()), "classification or regression.", nullable=False),
+        sfield("task", pa.string(), "classification or regression.", nullable=False),
         sfield("target", pa.string(), "Target column the model was trained on.", nullable=False),
-        sfield("n_features", pa.int32(), "Number of features.", nullable=False),
-        sfield("n_samples", pa.int32(), "Number of training rows.", nullable=False),
-        sfield("n_classes", pa.int32(), "Number of classes (NULL for regression)."),
+        sfield("n_features", pa.int64(), "Number of features.", nullable=False),
+        sfield("n_samples", pa.int64(), "Number of training rows.", nullable=False),
+        sfield("n_classes", pa.int64(), "Number of classes (NULL for regression)."),
         sfield("train_score", pa.float64(), "In-sample training score."),
         sfield("xgboost_version", pa.string(), "xgboost version used to fit."),
         sfield("created_at", pa.string(), "UTC timestamp the model was stored."),
