@@ -1,25 +1,24 @@
-"""Hyperparameter search exposed as SQL functions.
+"""Hyperparameter search exposed as a single discriminated-union SQL function.
 
 ``xgboost.grid_search`` / ``xgboost.randomized_search`` run scikit-learn's
 ``GridSearchCV`` / ``RandomizedSearchCV`` over a training table and return the
 cross-validation leaderboard (one row per parameter combination tried) plus the
-refit best model as a BLOB on the rank-1 row.
-
-The estimator is chosen by name and the search grid is a JSON object mapping each
-hyperparameter to the list of values to try:
+refit best model as a BLOB on the rank-1 row. The estimator and its search grid
+are a single **tagged-union** argument: the union *tag* is the estimator name and
+the *value* is a struct of hyperparameter value-lists. Each member therefore only
+exposes the hyperparameters that estimator actually has -- a discriminated union,
+realized with DuckDB's ``UNION`` type:
 
     SELECT params, mean_test_score, rank
     FROM xgboost.grid_search(
       (SELECT * FROM xgboost.iris()),
-      estimator := 'xgb_classifier', target := 'target', id := 'sample_id',
-      grid := '{"n_estimators": [50, 100], "max_depth": [3, 5]}')
+      target := 'target', id := 'sample_id',
+      estimator := union_value(xgb_classifier := {
+        'n_estimators': [50, 100], 'max_depth': [3, 5]}))
     ORDER BY rank;
 
-This is the single-estimator JSON form (rather than vgi-sklearn's
-discriminated-union ``union_value`` surface), because the released vgi-python on
-PyPI does not yet preserve union tags through argument decoding. Only the
-hyperparameters you list are searched; the rest stay at the estimator's defaults.
-Grab the best model with ``WHERE model IS NOT NULL``.
+Only the hyperparameters you list are searched; the rest stay at the estimator's
+defaults. Grab the best model with ``WHERE model IS NOT NULL``.
 """
 
 from __future__ import annotations
@@ -31,6 +30,7 @@ from typing import Annotated, Any, ClassVar
 import pyarrow as pa
 import xgboost
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+from vgi import TaggedUnion
 from vgi.arguments import Arg, TableInput
 from vgi.invocation import BindResponse
 from vgi.metadata import FunctionExample
@@ -38,25 +38,52 @@ from vgi.table_buffering_function import OutputCollector, TableBufferingParams
 from vgi.table_function import BindParams
 
 from .buffering import DrainState, SinkBuffer, input_schema_of
-from .models import _ESTIMATORS, CLASSIFICATION, _features_excluding, _xy, build_estimator
+from .models import _ESTIMATORS, _features_excluding, _xy, build_estimator
 from .registry import ModelMetadata, get_store, now_iso, pack_model, validate_name
 from .schema_utils import field as sfield
+from .typed_models import _HPARAMS, _UNSET
+
+_PYTYPE_TO_ARROW: dict[type, pa.DataType] = {
+    int: pa.int64(),
+    float: pa.float64(),
+    str: pa.string(),
+    bool: pa.bool_(),
+}
 
 
-def _parse_grid(grid: str) -> dict[str, list[Any]]:
-    grid = (grid or "").strip()
-    if not grid:
-        raise ValueError("grid is required, e.g. grid := '{\"n_estimators\": [50, 100]}'")
-    parsed = json.loads(grid)
-    if not isinstance(parsed, dict) or not parsed:
-        raise ValueError("grid must be a non-empty JSON object mapping each param to a list of values")
-    out: dict[str, list[Any]] = {}
-    for k, v in parsed.items():
-        out[k] = list(v) if isinstance(v, list) else [v]
-    return out
+def _member_struct(spec: list) -> pa.DataType:
+    """Struct type for one estimator's grid: each hyperparameter as a list of its scalar type."""
+    return pa.struct([pa.field(hp.name, pa.list_(_PYTYPE_TO_ARROW[hp.type])) for hp in spec])
+
+
+# One sparse-union member per estimator, tagged by the estimator name. This is
+# the discriminated union surfaced to SQL via union_value(<estimator> := {...}).
+_GRID_UNION = pa.sparse_union([pa.field(name, _member_struct(spec)) for name, spec in _HPARAMS.items()])
+
+
+def _param_grid(tag: str, value: dict[str, Any] | None) -> dict[str, list[Any]]:
+    """Translate a union member value (``{param: [values]}``) into a scikit-learn param grid.
+
+    Applies the same per-hyperparameter translation as the typed ``fit_<estimator>``
+    functions, element-wise. After dropping the magic sentinels (XGBoost's typed
+    defaults are truthful), the only remaining translation is ``none_if`` (e.g.
+    ``objective``/``booster`` "" -> omit). Hyperparameters left unset (NULL) are
+    omitted, so they stay at the estimator default rather than being searched.
+    """
+    grid: dict[str, list[Any]] = {}
+    for hp in _HPARAMS[tag]:
+        vals = (value or {}).get(hp.name)
+        if vals is None:
+            continue
+        items = [v for v in vals if not (hp.none_if is not _UNSET and v == hp.none_if)]
+        if not items:
+            continue
+        grid[hp.kwarg or hp.name] = items
+    return grid
 
 
 def _grid_size(space: dict[str, Any]) -> int:
+    """Total number of combinations in a (list-valued) parameter grid."""
     total = 1
     for values in space.values():
         total *= max(1, len(values))
@@ -70,19 +97,19 @@ _SEARCH_SCHEMA = pa.schema(
         sfield("mean_test_score", pa.float64(), "Mean cross-validated score.", nullable=False),
         sfield("std_test_score", pa.float64(), "Std-dev of the cross-validated score.", nullable=False),
         sfield("rank", pa.int64(), "Rank by mean score (1 = best).", nullable=False),
-        sfield("model", pa.binary(), "The refit best model as a BLOB (only on the best row)."),
+        sfield("model", pa.binary(), "The refit best model as a BLOB (only on the rank-1 row)."),
     ]
 )
 
 
 def _validate_search_bind(name: str, params: BindParams[Any]) -> BindResponse:
+    """Shared bind validation for grid_search / randomized_search."""
     a = params.args
     if not a.target:
         raise ValueError(f"{name} requires 'target' (the label column name, e.g. target := 'label')")
-    if a.estimator not in _ESTIMATORS:
-        raise ValueError(f"unknown estimator {a.estimator!r}; choose one of: {', '.join(sorted(_ESTIMATORS))}")
-    # Validate the grid keys against the estimator's real hyperparameters.
-    build_estimator(a.estimator, dict.fromkeys(_parse_grid(a.grid)))
+    tag = getattr(a.estimator, "tag", None)
+    if tag is not None and tag not in _ESTIMATORS:
+        raise ValueError(f"unknown estimator {tag!r}; choose one of: {', '.join(sorted(_ESTIMATORS))}")
     if a.model_name:
         validate_name(a.model_name)
     input_schema = params.bind_call.input_schema
@@ -100,8 +127,11 @@ def _run_search(cls: type, params: Any, state: DrainState, out: OutputCollector,
     state.done = True
 
     a = params.args
-    task, estimator = build_estimator(a.estimator, {})
-    grid = _parse_grid(a.grid)
+    tag = a.estimator.tag
+    if tag not in _ESTIMATORS:
+        raise ValueError(f"unknown estimator {tag!r}")
+    task, estimator = build_estimator(tag, {})
+    grid = _param_grid(tag, a.estimator.value)
 
     input_schema = input_schema_of(params)
     feats = _features_excluding(input_schema, a.target, a.id)
@@ -109,18 +139,17 @@ def _run_search(cls: type, params: Any, state: DrainState, out: OutputCollector,
     if table is None or table.num_rows == 0:
         raise ValueError(f"{cls.Meta.name} received no training rows")  # type: ignore[attr-defined]
 
-    x, y, cat_mask, categories = _xy(table, feats, a.target, task)
+    x, y, cat_mask, categories, classes = _xy(table, feats, a.target, task)
     search = build_search(estimator, grid, a)
     search.fit(x, y)
 
     results = search.cv_results_
     n = len(results["params"])
     best_idx = int(search.best_index_)
-    classes = [int(c) for c in search.best_estimator_.classes_] if task == CLASSIFICATION else None
 
     meta = ModelMetadata(
         name=a.model_name,
-        estimator=a.estimator,
+        estimator=tag,
         task=task,
         target=a.target,
         feature_names=feats,
@@ -141,7 +170,7 @@ def _run_search(cls: type, params: Any, state: DrainState, out: OutputCollector,
     out.emit(
         pa.RecordBatch.from_pydict(
             {
-                "estimator": [a.estimator] * n,
+                "estimator": [tag] * n,
                 "params": [json.dumps({k: _json_safe(v) for k, v in p.items()}) for p in results["params"]],
                 "mean_test_score": [float(s) for s in results["mean_test_score"]],
                 "std_test_score": [float(s) for s in results["std_test_score"]],
@@ -162,8 +191,14 @@ def _json_safe(v: Any) -> Any:
 @dataclass(slots=True, frozen=True)
 class GridSearchArgs:
     data: Annotated[TableInput, Arg(0, doc="Training table (features + target [+ id]).")]
-    estimator: Annotated[str, Arg("estimator", default="xgb_classifier", doc="Estimator name to tune.")]
-    grid: Annotated[str, Arg("grid", default="", doc="JSON object mapping each param to a list of values (required).")]
+    estimator: Annotated[
+        TaggedUnion,
+        Arg(
+            "estimator",
+            arrow_type=_GRID_UNION,
+            doc="union_value(<estimator> := {param: [values], ...}); the tag picks the estimator.",
+        ),
+    ]
     target: Annotated[str, Arg("target", default="", doc="Name of the target/label column (required).")]
     id: Annotated[str, Arg("id", default="", doc="Optional id column to exclude from features.")]
     cv: Annotated[int, Arg("cv", default=5, doc="Number of cross-validation folds.")]
@@ -182,8 +217,9 @@ class GridSearch(SinkBuffer[GridSearchArgs, DrainState]):
             FunctionExample(
                 sql=(
                     "SELECT params, mean_test_score, rank FROM xgboost.grid_search("
-                    "(SELECT * FROM xgboost.iris()), estimator := 'xgb_classifier', target := 'target', "
-                    "id := 'sample_id', grid := '{\"n_estimators\": [50, 100], \"max_depth\": [3, 5]}') ORDER BY rank"
+                    "(SELECT * FROM xgboost.iris()), target := 'target', id := 'sample_id', "
+                    "estimator := union_value(xgb_classifier := "
+                    "{'n_estimators': [50, 100], 'max_depth': [3, 5]})) ORDER BY rank"
                 ),
                 description="Grid-search an XGBoost classifier on iris",
             )
@@ -219,8 +255,14 @@ class GridSearch(SinkBuffer[GridSearchArgs, DrainState]):
 @dataclass(slots=True, frozen=True)
 class RandomizedSearchArgs:
     data: Annotated[TableInput, Arg(0, doc="Training table (features + target [+ id]).")]
-    estimator: Annotated[str, Arg("estimator", default="xgb_classifier", doc="Estimator name to tune.")]
-    grid: Annotated[str, Arg("grid", default="", doc="JSON object mapping each param to a list of values (required).")]
+    estimator: Annotated[
+        TaggedUnion,
+        Arg(
+            "estimator",
+            arrow_type=_GRID_UNION,
+            doc="union_value(<estimator> := {param: [values], ...}); the tag picks the estimator.",
+        ),
+    ]
     target: Annotated[str, Arg("target", default="", doc="Name of the target/label column (required).")]
     id: Annotated[str, Arg("id", default="", doc="Optional id column to exclude from features.")]
     n_iter: Annotated[int, Arg("n_iter", default=10, doc="Number of random combinations to sample.")]
@@ -241,9 +283,9 @@ class RandomizedSearch(SinkBuffer[RandomizedSearchArgs, DrainState]):
             FunctionExample(
                 sql=(
                     "SELECT params, mean_test_score, rank FROM xgboost.randomized_search("
-                    "(SELECT * FROM xgboost.iris()), estimator := 'xgb_classifier', target := 'target', "
-                    "id := 'sample_id', n_iter := 4, "
-                    "grid := '{\"n_estimators\": [50, 100, 200], \"max_depth\": [3, 5, 8]}') ORDER BY rank"
+                    "(SELECT * FROM xgboost.iris()), target := 'target', id := 'sample_id', n_iter := 4, "
+                    "estimator := union_value(xgb_classifier := "
+                    "{'n_estimators': [50, 100, 200], 'max_depth': [3, 5, 8]})) ORDER BY rank"
                 ),
                 description="Randomized-search an XGBoost classifier on iris",
             )
@@ -267,6 +309,7 @@ class RandomizedSearch(SinkBuffer[RandomizedSearchArgs, DrainState]):
         state: DrainState,
         out: OutputCollector,
     ) -> None:
+        # n_iter can't exceed the number of distinct combinations (the grid is discrete).
         _run_search(
             cls,
             params,
