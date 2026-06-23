@@ -1,5 +1,7 @@
 <p align="center">
   <img src="https://raw.githubusercontent.com/Query-farm/vgi-xgboost/main/assets/vgi-logo.png" alt="Vector Gateway Interface" height="104">
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="https://raw.githubusercontent.com/Query-farm/vgi-xgboost/main/assets/xgboost-logo.png" alt="XGBoost" height="56">
 </p>
 
 # vgi-xgboost
@@ -209,32 +211,3 @@ suite, and a Docker build + `/health` smoke test on every push and PR.
 Dependabot (`.github/dependabot.yml`) keeps the Python deps, GitHub Actions, and
 the Docker base image up to date weekly.
 
-## Deployment (Fly.io)
-
-`vgi-python` / `vgi-rpc` are on PyPI, so the Docker image installs everything
-directly — no vendoring step.
-
-```sh
-make deploy        # build, smoke-test, push, and deploy
-fly volumes create xgboost_models --size 1 --region iad   # one-time, for the registry
-```
-
-`serve.py` runs the worker over HTTP; attach the deployed endpoint with
-`ATTACH 'xgboost' (TYPE vgi, LOCATION 'https://<app>.fly.dev');`.
-
-## Layout
-
-```
-xgboost_worker.py      entry point; assembles the `xgboost` catalog
-serve.py               HTTP entry point (Fly.io)
-vgi_xgboost/
-  datasets.py          dataset table functions (bundled via scikit-learn)
-  models.py            fit / predict / cross_val_predict / cross_val_score / registry mgmt
-  typed_models.py      generated fit_<estimator> functions with typed hyperparams
-  search.py            grid_search / randomized_search (JSON grid)
-  features.py          native categorical + missing-value feature assembly
-  importance.py        feature_importance + SHAP explain/shap_values + permutation_importance
-  registry.py          ModelStore (local disk; S3/R2 seam) + native serialization + model BLOB
-  buffering.py         shared sink/combine helpers
-  schema_utils.py      Arrow schema helpers
-```
