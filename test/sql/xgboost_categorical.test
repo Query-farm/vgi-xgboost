@@ -1,0 +1,110 @@
+# name: test/sql/xgboost_categorical.test
+# description: Native categorical features, missing values, predict output modes, model BLOB
+# group: [vgi_xgboost]
+
+require-env VGI_XGBOOST_WORKER
+
+require vgi
+
+require httpfs
+
+statement ok
+ATTACH 'xgboost' AS xgboost (TYPE vgi, LOCATION '${VGI_XGBOOST_WORKER}');
+
+# a table with a string (categorical) feature and a NULL (missing) numeric value
+statement ok
+CREATE TEMP TABLE cattrain AS SELECT * FROM (VALUES
+  (1, 'red', 1.0, 0), (2, 'blue', 2.0, 1), (3, 'red', NULL, 0), (4, 'green', 4.0, 1),
+  (5, 'blue', 5.0, 1), (6, 'red', 1.5, 0), (7, 'green', NULL, 1), (8, 'blue', 2.5, 1),
+  (9, 'red', 0.5, 0), (10, 'green', 6.0, 1), (11, 'blue', 3.0, 1), (12, 'red', 0.2, 0)
+) AS t(id, color, score, target);
+
+# fit picks up the string column as a categorical feature (no one-hot, 2 features)
+query II
+SELECT task, n_features FROM xgboost.fit((SELECT * FROM cattrain),
+  model_name := 'catm', estimator := 'xgb_classifier', target := 'target', id := 'id');
+----
+classification	2
+
+# predict works on rows with categorical + missing values
+query I
+SELECT count(*) FROM xgboost.predict((SELECT * FROM cattrain), model_name := 'catm', id := 'id');
+----
+12
+
+# an unseen category at predict time is treated as missing (no error)
+query I
+SELECT count(*) FROM xgboost.predict(
+  (SELECT 99 AS id, 'PURPLE' AS color, 3.0 AS score), model_name := 'catm', id := 'id');
+----
+1
+
+# a missing (NULL) numeric value at predict time is handled natively
+query I
+SELECT count(*) FROM xgboost.predict(
+  (SELECT 99 AS id, 'red' AS color, NULL::DOUBLE AS score), model_name := 'catm', id := 'id');
+----
+1
+
+# ---- predict output modes ----
+
+statement ok
+CREATE TEMP VIEW iris_xy AS
+  SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target
+  FROM xgboost.iris();
+
+statement ok
+SELECT 1 FROM xgboost.fit((SELECT * FROM iris_xy), model_name := 'iris_om',
+  estimator := 'xgb_classifier', target := 'target', id := 'sample_id');
+
+# output_margin emits the raw margin instead of the class label
+query II
+SELECT count(*), count(margin) FROM xgboost.predict((SELECT * FROM iris_xy),
+  model_name := 'iris_om', id := 'sample_id', output_margin := true);
+----
+150	150
+
+# pred_leaf emits one leaf index per tree as a list (100 trees x 3 classes = 300)
+query I
+SELECT bool_and(len(leaf) = 300) FROM xgboost.predict((SELECT * FROM iris_xy),
+  model_name := 'iris_om', id := 'sample_id', pred_leaf := true);
+----
+true
+
+# with_proba and output_margin cannot be combined
+statement error
+SELECT * FROM xgboost.predict((SELECT * FROM iris_xy), model_name := 'iris_om',
+  with_proba := true, output_margin := true);
+----
+
+# ---- model BLOB: fit returns it, predict accepts it without the registry ----
+
+statement ok
+CREATE TEMP TABLE blob_model AS
+  SELECT model FROM xgboost.fit((SELECT * FROM iris_xy),
+    estimator := 'xgb_classifier', target := 'target', id := 'sample_id');
+
+# the BLOB is non-empty and not persisted under a name
+query I
+SELECT octet_length(model) > 0 FROM blob_model;
+----
+true
+
+statement ok
+SET VARIABLE mdl = (SELECT model FROM blob_model);
+
+# predict via the BLOB (model :=) gives all three classes, no registry entry needed
+query I
+SELECT count(DISTINCT prediction) FROM xgboost.predict((SELECT * FROM iris_xy),
+  model := getvariable('mdl'), id := 'sample_id');
+----
+3
+
+statement ok
+SELECT * FROM xgboost.drop_model('catm');
+
+statement ok
+SELECT * FROM xgboost.drop_model('iris_om');
+
+statement ok
+DETACH xgboost;

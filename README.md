@@ -11,12 +11,12 @@ models, persist them in a registry, predict over SQL tables, and interpret them
 INSTALL vgi FROM community; LOAD vgi;
 ATTACH 'xgboost' (TYPE vgi, LOCATION 'uv run xgboost_worker.py');
 
--- train + persist a model
+-- train + persist a model (every non-id/target column becomes a feature)
 SELECT * FROM xgboost.fit(
-  (SELECT * FROM xgboost.iris()),
+  (SELECT * EXCLUDE (target_name) FROM xgboost.iris()),
   model_name := 'iris_clf', estimator := 'xgb_classifier', target := 'target', id := 'sample_id');
 
--- predict later
+-- predict later (input needs the same feature columns; selected by name)
 SELECT * FROM xgboost.predict((SELECT * FROM new_flowers), model_name := 'iris_clf', id := 'id');
 ```
 
@@ -28,11 +28,13 @@ Each piece is mapped to the VGI primitive that fits its data flow:
 | Area | SQL surface | VGI primitive |
 | --- | --- | --- |
 | **Datasets** | `SELECT * FROM xgboost.iris()` | table function (source) |
-| **Fit** | `xgboost.fit((SELECT ...), model_name := 'm', ...)` | table-buffering → registry |
+| **Fit** | `xgboost.fit((SELECT ...), model_name := 'm', ...)` | table-buffering → registry + BLOB |
+| **Typed fit** | `xgboost.fit_xgb_classifier((SELECT ...), n_estimators := 300, ...)` | table-buffering → registry + BLOB |
 | **Predict** | `xgboost.predict((SELECT ...), model_name := 'm')` | streaming table-in-out |
-| **Cross-val** | `xgboost.cross_val_predict((SELECT ...), ...)` | table-buffering (no persistence) |
-| **Importance** | `xgboost.feature_importance('m')` | table function (reads the registry) |
-| **Explain (SHAP)** | `xgboost.explain((SELECT ...), model_name := 'm')` | streaming table-in-out |
+| **Cross-val** | `xgboost.cross_val_predict` / `cross_val_score((SELECT ...), ...)` | table-buffering (no persistence) |
+| **Tuning** | `xgboost.grid_search` / `randomized_search((SELECT ...), grid := '...')` | table-buffering (CV leaderboard) |
+| **Importance** | `xgboost.feature_importance('m')` / `permutation_importance(...)` | table function / buffering |
+| **Explain (SHAP)** | `xgboost.explain` / `shap_values((SELECT ...), model_name := 'm')` | streaming table-in-out |
 
 **Conventions** for the fit / predict / explain functions:
 
@@ -45,13 +47,22 @@ Each piece is mapped to the VGI primitive that fits its data flow:
   also excluded from features. Classification targets must be integer class
   labels encoded `0..n_classes-1` (XGBoost's requirement); the bundled datasets
   already are.
-- **Every remaining column is treated as a numeric feature.** Non-numeric
-  columns raise a clear error — `SELECT` only the columns you want as features.
-- Hyperparameters are passed as a JSON string: `params := '{"n_estimators": 300, "max_depth": 6}'`.
-  Unknown hyperparameters are rejected with the list of valid ones for that estimator.
+- **Every remaining column is a feature.** Numeric columns are used directly;
+  **string columns become native categorical features** (no one-hot needed —
+  this is XGBoost's edge), and **NULLs flow through as missing values**. Only
+  genuinely unsupported types (e.g. blobs, structs) raise a clear error.
+- Hyperparameters can be passed as a JSON string: `params := '{"n_estimators": 300, "max_depth": 6}'`,
+  or — better — as **native typed arguments** via the `fit_<estimator>` functions
+  (see below). Unknown hyperparameters are rejected with the list of valid ones.
 - **`fit`/`predict` align features by name**, not position: `predict` selects the
   model's fitted feature columns by name (input order is irrelevant, extra
-  columns are ignored) and errors if a required feature column is missing.
+  columns are ignored) and errors if a required feature column is missing. Unseen
+  categories at predict time are treated as missing rather than raising.
+- **`fit` always returns the model as a `model` BLOB** (estimator + metadata,
+  serialized with XGBoost's native format). It also persists to the registry
+  *only if* `model_name` is given (so `model_name` is optional). `predict`,
+  `explain`, `shap_values`, and `permutation_importance` take **either**
+  `model_name :=` or `model :=` (a BLOB).
 
 ## Function catalog
 
@@ -66,13 +77,14 @@ SELECT * FROM xgboost.make_classification(n_samples := 500, n_features := 8, n_c
 ```
 
 ### Models (registry-backed)
-`fit`, `predict`, `cross_val_predict`, `list_models`, `model_info`, `drop_model`.
+`fit`, `predict`, `cross_val_predict`, `cross_val_score`, `list_models`,
+`model_info`, `drop_model`.
 
 Estimators: `xgb_classifier`, `xgb_regressor`, `xgb_rf_classifier`,
 `xgb_rf_regressor` (the random-forest-flavoured boosters).
 
 ```sql
--- train + persist
+-- train + persist (params as JSON)
 SELECT * FROM xgboost.fit(
   (SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target FROM xgboost.iris()),
   model_name := 'iris_clf', estimator := 'xgb_classifier', target := 'target', id := 'sample_id',
@@ -81,31 +93,86 @@ SELECT * FROM xgboost.fit(
 -- predict later (optionally with per-class probabilities)
 SELECT * FROM xgboost.predict((SELECT * FROM new_flowers), model_name := 'iris_clf', id := 'id', with_proba := true);
 
--- evaluate without persisting
+-- predict output modes: raw margin or per-tree leaf indices
+SELECT * FROM xgboost.predict((SELECT * FROM new_flowers), model_name := 'iris_clf', id := 'id', output_margin := true);
+SELECT * FROM xgboost.predict((SELECT * FROM new_flowers), model_name := 'iris_clf', id := 'id', pred_leaf := true);
+
+-- evaluate without persisting: out-of-fold predictions, or per-fold held-out scores
 SELECT count(*) FROM xgboost.cross_val_predict(
   (SELECT * FROM iris_xy), estimator := 'xgb_classifier', target := 'target', id := 'sample_id', cv := 5);
+SELECT fold, score FROM xgboost.cross_val_score(
+  (SELECT * FROM iris_xy), estimator := 'xgb_classifier', target := 'target', cv := 5);
 
 SELECT * FROM xgboost.list_models();
 SELECT * FROM xgboost.drop_model('iris_clf');
 ```
 
+### Typed fit functions (`fit_<estimator>`)
+Each estimator also has a `fit_<estimator>` form that exposes XGBoost's most-tuned
+hyperparameters as **native typed SQL arguments** — discoverable in autocomplete,
+type-checked, no JSON: `n_estimators`, `max_depth`, `learning_rate`, `subsample`,
+`colsample_bytree`, `min_child_weight`, `gamma`, `reg_alpha`, `reg_lambda`,
+`objective`, `booster` (`gbtree`/`gblinear`/`dart`), `tree_method`, `random_state`.
+
+```sql
+SELECT * FROM xgboost.fit_xgb_classifier(
+  (SELECT * FROM iris_xy), model_name := 'iris_clf', target := 'target', id := 'sample_id',
+  n_estimators := 300, max_depth := 6, learning_rate := 0.1);
+```
+
+### Hyperparameter search
+`grid_search` and `randomized_search` run cross-validated tuning and return the
+leaderboard (one row per combination) with the refit best model BLOB on the best
+row. The grid is a JSON object; grab the best model with `WHERE model IS NOT NULL`.
+
+```sql
+SELECT params, mean_test_score, rank
+FROM xgboost.grid_search((SELECT * FROM iris_xy),
+  estimator := 'xgb_classifier', target := 'target', id := 'sample_id',
+  grid := '{"n_estimators": [100, 300], "max_depth": [3, 5, 8]}')
+ORDER BY rank;
+
+SELECT params, mean_test_score FROM xgboost.randomized_search((SELECT * FROM iris_xy),
+  estimator := 'xgb_classifier', target := 'target', n_iter := 10,
+  grid := '{"learning_rate": [0.05, 0.1, 0.2], "max_depth": [3, 5, 8]}');
+```
+
 ### Interpretation (XGBoost-specific)
-`feature_importance` and `explain`.
+`feature_importance`, `explain`, `shap_values`, and `permutation_importance`.
 
 ```sql
 -- ranked per-feature importance for a stored model (weight/gain/cover/total_*)
 SELECT * FROM xgboost.feature_importance('iris_clf', importance_type := 'gain');
 
--- SHAP contributions: base_value + one contrib_<feature> column per feature, per row.
--- base_value + sum(contrib_*) == the model's raw-margin prediction.
--- Supported for regression and binary classification.
+-- SHAP contributions, wide: base_value + one contrib_<feature> column per row.
+-- base_value + sum(contrib_*) == the model's raw-margin prediction (regression / binary).
 SELECT * FROM xgboost.explain((SELECT * FROM xgboost.diabetes()), model_name := 'diab_reg', id := 'sample_id');
+
+-- SHAP contributions, long: one row per (input row, feature) — easy to pivot/aggregate.
+SELECT * FROM xgboost.shap_values((SELECT * FROM xgboost.diabetes()), model_name := 'diab_reg', id := 'sample_id');
+
+-- model-agnostic importance: the drop in score when each feature is shuffled.
+SELECT * FROM xgboost.permutation_importance((SELECT * FROM xgboost.diabetes()),
+  model_name := 'diab_reg', target := 'target') ORDER BY importance_mean DESC;
+```
+
+### Native categorical + missing values
+String columns are used as categorical features directly (no one-hot), and NULLs
+are XGBoost's native missing value — both at fit and predict, and unseen
+categories at predict map to missing rather than erroring:
+
+```sql
+SELECT * FROM xgboost.fit((SELECT id, color, score, churned FROM customers),
+  model_name := 'churn', estimator := 'xgb_classifier', target := 'churned', id := 'id');
 ```
 
 ## Model registry storage
 
-Fitted models are pickled (joblib) plus a JSON metadata sidecar. The store is
-chosen behind the `ModelStore` interface in `vgi_xgboost/registry.py`:
+Fitted models are serialized with XGBoost's **native `save_model`** (UBJSON, not
+pickle) plus a JSON metadata sidecar — so they are forward-compatible across
+library upgrades and load without arbitrary code execution. The same packing
+flows through SQL as a self-contained `model` BLOB. The store is chosen behind the
+`ModelStore` interface in `vgi_xgboost/registry.py`:
 
 - **Local disk** (default): `XGBOOST_MODELS_DIR` (default `./models`).
 - **S3 / Cloudflare R2**: not yet implemented — `get_store()` is the single seam
@@ -158,9 +225,12 @@ xgboost_worker.py      entry point; assembles the `xgboost` catalog
 serve.py               HTTP entry point (Fly.io)
 vgi_xgboost/
   datasets.py          dataset table functions (bundled via scikit-learn)
-  models.py            fit / predict / cross_val_predict / registry mgmt
-  importance.py        feature_importance + SHAP explain
-  registry.py          ModelStore (local disk; S3/R2 seam)
-  buffering.py         shared sink/combine/matrix helpers
+  models.py            fit / predict / cross_val_predict / cross_val_score / registry mgmt
+  typed_models.py      generated fit_<estimator> functions with typed hyperparams
+  search.py            grid_search / randomized_search (JSON grid)
+  features.py          native categorical + missing-value feature assembly
+  importance.py        feature_importance + SHAP explain/shap_values + permutation_importance
+  registry.py          ModelStore (local disk; S3/R2 seam) + native serialization + model BLOB
+  buffering.py         shared sink/combine helpers
   schema_utils.py      Arrow schema helpers
 ```

@@ -1,0 +1,73 @@
+# name: test/sql/xgboost_typed_fit.test
+# description: Typed per-estimator fit functions (fit_<estimator>)
+# group: [vgi_xgboost]
+
+require-env VGI_XGBOOST_WORKER
+
+require vgi
+
+require httpfs
+
+statement ok
+ATTACH 'xgboost' AS xgboost (TYPE vgi, LOCATION '${VGI_XGBOOST_WORKER}');
+
+statement ok
+CREATE TEMP VIEW tr AS
+  SELECT sample_id, sepal_length_cm AS f1, sepal_width_cm AS f2,
+         petal_length_cm AS f3, petal_width_cm AS f4, target
+  FROM xgboost.iris();
+
+# typed hyperparameters as native SQL args; returns the standard fit summary
+query III
+SELECT estimator, task, n_features
+FROM xgboost.fit_xgb_classifier((SELECT * FROM tr),
+     model_name := 'tc', target := 'target', id := 'sample_id',
+     n_estimators := 80, max_depth := 4, learning_rate := 0.2);
+----
+xgb_classifier	classification	4
+
+# the typed model is in the registry and predicts accurately
+query I
+SELECT avg((p.prediction = i.target)::INT) > 0.9
+FROM xgboost.predict((SELECT * FROM tr), model_name := 'tc', id := 'sample_id') p
+JOIN xgboost.iris() i USING (sample_id);
+----
+true
+
+# max_depth := 0 means "XGBoost default" (sentinel dropped) and must not error
+query I
+SELECT task FROM xgboost.fit_xgb_classifier((SELECT * FROM tr),
+     target := 'target', id := 'sample_id', max_depth := 0) LIMIT 1;
+----
+classification
+
+# regression estimator via typed wrapper
+query I
+SELECT task FROM xgboost.fit_xgb_regressor((SELECT * FROM xgboost.diabetes()),
+     target := 'target', id := 'sample_id', n_estimators := 50, max_depth := 3) LIMIT 1;
+----
+regression
+
+# alternate booster (dart) and the rf-flavoured wrapper both fit
+query I
+SELECT task FROM xgboost.fit_xgb_classifier((SELECT * FROM tr),
+     target := 'target', id := 'sample_id', booster := 'dart') LIMIT 1;
+----
+classification
+
+query I
+SELECT task FROM xgboost.fit_xgb_rf_regressor((SELECT * FROM xgboost.diabetes()),
+     target := 'target', id := 'sample_id', n_estimators := 30) LIMIT 1;
+----
+regression
+
+# a wrongly-typed hyperparameter is rejected at the SQL layer
+statement error
+SELECT * FROM xgboost.fit_xgb_classifier((SELECT * FROM tr), target := 'target', learning_rate := 'big');
+----
+
+statement ok
+SELECT * FROM xgboost.drop_model('tc');
+
+statement ok
+DETACH xgboost;

@@ -33,7 +33,7 @@ venv:
 	uv pip install --python .venv \
 		"vgi-python[http,oauth]>=0.8.2" \
 		"vgi-rpc[sentry]>=0.20.4" \
-		"xgboost>=2.0" "scikit-learn>=1.5" numpy \
+		"xgboost>=2.0" "scikit-learn>=1.5" numpy pandas \
 		pytest ruff mypy haybarn
 
 lint:

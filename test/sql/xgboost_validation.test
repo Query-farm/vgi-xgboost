@@ -17,12 +17,14 @@ CREATE TEMP VIEW tr AS
          petal_length_cm AS f3, petal_width_cm AS f4, target
   FROM xgboost.iris();
 
-# ---- missing required args -> clear errors ----
-statement error
-SELECT * FROM xgboost.fit((SELECT * FROM tr), estimator := 'xgb_classifier', target := 'target');
+# ---- model_name is optional: fit returns the model as a BLOB even without a name ----
+query I
+SELECT octet_length(model) > 0
+FROM xgboost.fit((SELECT * FROM tr), estimator := 'xgb_classifier', target := 'target', id := 'sample_id');
 ----
-requires 'model_name'
+true
 
+# ---- target is required -> clear error ----
 statement error
 SELECT * FROM xgboost.fit((SELECT * FROM tr), model_name := 'm', estimator := 'xgb_classifier');
 ----
@@ -40,13 +42,22 @@ SELECT * FROM xgboost.fit((SELECT * FROM tr), model_name := 'm', target := 'targ
 ----
 unknown hyperparameter
 
-# ---- non-numeric feature column -> clear error (not an opaque cast failure) ----
-# (target_name is a text column and becomes a "feature" when not excluded)
-statement error
-SELECT * FROM xgboost.fit((SELECT * FROM xgboost.iris()), model_name := 'mbad',
-                          estimator := 'xgb_classifier', target := 'target', id := 'sample_id');
+# ---- string feature columns are accepted as native categoricals (not an error) ----
+# (target_name is a text column and becomes a categorical feature when not excluded)
+query I
+SELECT n_features FROM xgboost.fit((SELECT * FROM xgboost.iris()), model_name := 'mcat',
+                                   estimator := 'xgb_classifier', target := 'target', id := 'sample_id');
 ----
-must be numeric
+5
+
+statement ok
+SELECT * FROM xgboost.drop_model('mcat');
+
+# ---- predict requires model_name OR model BLOB -> clear error when neither given ----
+statement error
+SELECT * FROM xgboost.predict((SELECT * FROM tr), id := 'sample_id');
+----
+either 'model_name'
 
 statement ok
 SELECT * FROM xgboost.fit((SELECT * FROM tr), model_name := 'valmodel',

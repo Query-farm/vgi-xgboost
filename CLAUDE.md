@@ -13,8 +13,9 @@ sibling `~/Development/vgi-scikit-learn` worker (which vendored local checkouts 
 that complexity is gone here now those packages are on PyPI).
 
 XGBoost's value is gradient-boosted train/predict, so this worker is focused on a
-**model registry** (fit/predict/cross_val_predict) plus XGBoost-specific
-interpretation (feature importance, SHAP). It deliberately does *not* mirror
+**model registry** (fit/predict/cross_val_predict/cross_val_score), **typed
+fit + hyperparameter search**, and XGBoost-specific interpretation (feature
+importance, SHAP, permutation importance). It deliberately does *not* mirror
 vgi-sklearn's metrics/transforms surface — those are scikit-learn's, and
 vgi-sklearn already exposes them. A small datasets module (reusing scikit-learn's
 bundled data) is kept only so demos and the SQL tests are self-contained.
@@ -26,10 +27,13 @@ xgboost_worker.py     entry point: builds the `xgboost` Catalog, XGBoostWorker, 
 serve.py              HTTP entry point (injects --http into Worker.main())
 vgi_xgboost/
   datasets.py         dataset table functions (toy sets + make_* generators)
-  models.py           fit / predict / cross_val_predict + registry mgmt
-  importance.py       feature_importance (from registry) + explain (SHAP pred_contribs)
-  registry.py         ModelStore interface + LocalDiskStore (S3/R2 seam)
-  buffering.py        shared sink/combine/serialize/matrix helpers
+  models.py           fit / predict / cross_val_predict / cross_val_score + registry mgmt
+  typed_models.py     generated fit_<estimator> functions with typed hyperparams
+  search.py           grid_search / randomized_search (single-estimator JSON grid)
+  features.py         native categorical + missing-value feature assembly (pandas)
+  importance.py       feature_importance + explain (wide SHAP) + shap_values (long) + permutation_importance
+  registry.py         ModelStore + LocalDiskStore (S3/R2 seam) + native serialization + model-BLOB pack/unpack
+  buffering.py        shared sink/combine/serialize helpers
   schema_utils.py     pa.Field comment helper, name sanitisation, NoArgs
 tests/                pytest (in-process harness in tests/harness.py)
 test/sql/*.test       DuckDB sqllogictest — the authoritative integration tests
@@ -43,12 +47,61 @@ To add functions: implement in the relevant `vgi_xgboost/*.py`, export a
 | Need | Primitive | Example here |
 | --- | --- | --- |
 | Emit rows, no input | `TableFunctionGenerator` (`@bind_fixed_schema` / `@init_single_worker`, or custom `on_bind` for schema-from-args) | `datasets.py`, `importance.FeatureImportance` |
-| `fit` (needs whole input) | `TableBufferingFunction` via `buffering.SinkBuffer` | `models.FitModel`, `CrossValPredict` |
-| Score/explain a stream with an already-fit model | `TableInOutGenerator` | `models.PredictModel`, `importance.ExplainModel` |
+| `fit` (needs whole input) | `TableBufferingFunction` via `buffering.SinkBuffer` | `models.FitModel`, `CrossValPredict`, `CrossValScore`, typed `fit_<estimator>`, `search.GridSearch` |
+| Score/explain a stream with an already-fit model | `TableInOutGenerator` | `models.PredictModel`, `importance.ExplainModel`, `ShapValues` |
 
 Conventions for fit/predict/explain: input relation is X via a `(SELECT ...)`
 subquery (Arg(0)); name `target` (features = the rest) and an optional `id`
-passthrough; hyperparameters as a JSON-string arg.
+passthrough; hyperparameters as a JSON-string arg (generic `fit`/`search`) or
+typed named args (`fit_<estimator>`).
+
+## Models: registry + BLOB + typed functions + search
+
+- **fit always returns a `model` BLOB** (estimator + metadata packed by
+  `registry.pack_model`) and persists to the registry only if `model_name` is
+  given (so `model_name` is optional). `predict` / `explain` / `shap_values` /
+  `permutation_importance` take **either** `model_name :=` or `model :=` (a BLOB);
+  `unpack_meta` reads metadata at bind, `unpack_model` loads the estimator at
+  process. Pass a BLOB into a table function via `SET VARIABLE`+`getvariable()`
+  (a table function gets only one subquery slot — the table input).
+- **Serialization is XGBoost-native, not pickle** (`registry._native_dumps/_loads`
+  via `Booster.save_model`/`load_model` to a temp `.ubj`). UBJSON is XGBoost's own
+  forward-compatible format and loads without arbitrary code execution. The
+  estimator *class* is recorded in metadata (`_ESTIMATOR_CLASSES`) so the right
+  scikit-learn wrapper is rebuilt on load.
+- **Typed `fit_<estimator>` functions** are generated in `typed_models.py` from
+  the `_HPARAMS` spec via `types.new_class(name, (SinkBuffer[args, DrainState],),
+  ...)` — plain `type()` can't resolve the subscripted-generic base. Each shares
+  `models._fit_and_emit`. Numeric knobs use a sentinel default (`n_estimators := 0`,
+  `gamma := -1.0`, etc.) that is *dropped* so the hyperparameter stays at XGBoost's
+  own default — an omitted arg is a true no-op. `test_every_typed_param_is_valid`
+  guards that every exposed param is real for its estimator.
+- **`search.grid_search` / `randomized_search`** wrap sklearn's
+  `GridSearchCV`/`RandomizedSearchCV`. The grid is a **JSON object** arg
+  (`grid := '{"n_estimators": [50, 100]}'`), *not* vgi-sklearn's discriminated-
+  union `union_value` surface: the released PyPI vgi-python (0.8.2) does **not**
+  export `TaggedUnion` / preserve union tags, so the union approach is unavailable
+  here. Returns the CV leaderboard (one row per combo) with the refit best model
+  BLOB on the best row — grab it with `WHERE model IS NOT NULL`. When a vgi-python
+  with union-tag decoding is pinned, the union form from vgi-sklearn's `search.py`
+  could replace this.
+- **Native categorical + missing values (`features.py`).** Feature assembly builds
+  a **pandas DataFrame** (pandas is a hard dep) so XGBoost's `enable_categorical`
+  + `tree_method='hist'` (both in `_COMMON_DEFAULTS`) handle string columns
+  natively (no one-hot) and NaN as missing. `categorical_mask` flags string/dict
+  Arrow columns; `build_x_fit` captures each categorical column's category list
+  into `ModelMetadata.categories`; `build_x_predict` reuses those categories so
+  **unseen categories at predict map to NaN/missing instead of raising** (XGBoost
+  3.x has strict category encoding by default). Decimal columns are cast to float.
+- **predict output modes:** default label/value; `with_proba` (per-class probs);
+  `output_margin` (raw margin scalar — collapsed to max for multiclass); `pred_leaf`
+  (one leaf index per tree as a `list<int>` column — uses the Booster, not the
+  sklearn `predict()`, which rejects `pred_leaf`). The modes are mutually
+  exclusive (validated at bind).
+- **SHAP:** `explain` is wide (`base_value` + one `contrib_<feature>` per row);
+  `shap_values` is long (`(id, feature, shap_value, base_value)`). Both use
+  `booster.predict(DMatrix(x, enable_categorical=True), pred_contribs=True)` and
+  are regression / binary only (multiclass contribs are 3D — rejected at bind).
 
 ## Sharp edges (read before debugging)
 
@@ -60,14 +113,21 @@ passthrough; hyperparameters as a JSON-string arg.
    `_xy` rounds the target to int but does *not* re-encode; the bundled datasets
    are already 0-based. If you add a dataset with non-contiguous labels, encode
    it first.
-3. **`explain` (SHAP) is regression / binary only.** `booster.predict(...,
+3. **`explain` / `shap_values` are regression / binary only.** `booster.predict(...,
    pred_contribs=True)` returns a 2D `(n_rows, n_features+1)` array for those;
-   multiclass returns a 3D array. `ExplainModel.on_bind` rejects multiclass with
-   a clear error. The **last** column of the contribs array is the base value.
-4. **Feature names in the booster are `f0..fN`** when fit on a numpy matrix (we
-   always do). `feature_importance` maps `f{i}` back to the stored
-   `feature_names[i]`; features never used in a split are absent from
-   `get_score()` and reported as importance `0`.
+   multiclass returns a 3D array. `on_bind` rejects multiclass with a clear error.
+   The **last** column of the contribs array is the base value.
+4. **`_xy` now returns a pandas DataFrame** (was a numpy matrix), so the booster
+   sees the real feature names and categorical dtypes. `feature_importance` still
+   maps `f{i}` → `feature_names[i]` defensively, but `get_score()` may also key by
+   name; features never used in a split are absent and reported as importance `0`.
+   When fitting on the DataFrame XGBoost needs `enable_categorical=True` +
+   `tree_method='hist'` (both in `_COMMON_DEFAULTS`) or string columns error.
+4a. **Unseen categories at predict raise in XGBoost 3.x** unless you reuse the
+   training category set — `build_x_predict` does this (maps unseen → NaN). A bare
+   `pd.Categorical(values, categories=...)` triggers a pandas-4 deprecation
+   warning for out-of-dtype entries; filter unseen values to `None` *before*
+   `.astype(CategoricalDtype(...))` (as `features.py` does).
 5. **`pa.Float64Array` does not exist** — the class is `pa.DoubleArray`. A bad
    `Param` type hint does NOT error; the framework warns and registers the
    function with **zero input columns**. Watch for `UserWarning: ... type hints
@@ -127,7 +187,18 @@ smoke test verifies imports + `/health`.
 ## Model registry
 
 `registry.get_store()` is the single seam selecting the backend. `LocalDiskStore`
-(joblib pickle + JSON metadata, root from `XGBOOST_MODELS_DIR`, default
-`./models`) is the only impl today; an `S3Store` for S3/R2 drops in here without
-touching `models.py`. `predict` warns via `duckdb_logs()` if the worker's XGBoost
-version differs from the one a model was fitted with.
+(`<name>.ubj` native XGBoost artifact + `<name>.json` metadata sidecar, root from
+`XGBOOST_MODELS_DIR`, default `./models`) is the only impl today; an `S3Store` for
+S3/R2 drops in here without touching `models.py`. Serialization is XGBoost-native
+(`save_model`/`load_model`), not pickle — see the registry note above. `predict`
+warns via `duckdb_logs()` if the worker's XGBoost version differs from the one a
+model was fitted with. The same pack/unpack also produces the self-contained
+`model` BLOB that flows through SQL.
+
+## Dependencies
+
+PyPI deps live in **four** places that must stay in sync when adding one:
+`pyproject.toml`, the PEP 723 header in `xgboost_worker.py`, `make venv` in the
+`Makefile`, and the Dockerfile `pip install` line. **pandas** is a hard dep
+(needed for native categorical DataFrames in `features.py`); joblib was dropped
+when serialization moved to XGBoost-native.

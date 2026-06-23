@@ -1,0 +1,81 @@
+# name: test/sql/xgboost_search.test
+# description: Cross-validated hyperparameter search (grid_search / randomized_search)
+# group: [vgi_xgboost]
+
+require-env VGI_XGBOOST_WORKER
+
+require vgi
+
+require httpfs
+
+statement ok
+ATTACH 'xgboost' AS xgboost (TYPE vgi, LOCATION '${VGI_XGBOOST_WORKER}');
+
+statement ok
+CREATE TEMP VIEW iris_xy AS
+  SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target
+  FROM xgboost.iris();
+
+# grid_search returns one row per combination (2 x 2 = 4)
+query I
+SELECT count(*) FROM xgboost.grid_search((SELECT * FROM iris_xy),
+  estimator := 'xgb_classifier', target := 'target', id := 'sample_id',
+  grid := '{"n_estimators": [30, 60], "max_depth": [2, 4]}');
+----
+4
+
+# exactly one row (the best) carries the refit model BLOB
+query I
+SELECT count(*) FROM xgboost.grid_search((SELECT * FROM iris_xy),
+  estimator := 'xgb_classifier', target := 'target', id := 'sample_id',
+  grid := '{"n_estimators": [30, 60], "max_depth": [2, 4]}')
+WHERE model IS NOT NULL;
+----
+1
+
+# the best mean test score is high on iris
+query I
+SELECT max(mean_test_score) > 0.9 FROM xgboost.grid_search((SELECT * FROM iris_xy),
+  estimator := 'xgb_classifier', target := 'target', id := 'sample_id',
+  grid := '{"n_estimators": [30, 60], "max_depth": [2, 4]}');
+----
+true
+
+# grid_search can persist the best model to the registry
+statement ok
+SELECT 1 FROM xgboost.grid_search((SELECT * FROM iris_xy),
+  estimator := 'xgb_classifier', target := 'target', id := 'sample_id',
+  model_name := 'gs_best', grid := '{"n_estimators": [40, 80]}') WHERE model IS NOT NULL;
+
+query I
+SELECT count(*) FROM xgboost.model_info('gs_best');
+----
+1
+
+# randomized_search samples n_iter combinations (capped at the grid size)
+query I
+SELECT count(*) FROM xgboost.randomized_search((SELECT * FROM iris_xy),
+  estimator := 'xgb_classifier', target := 'target', id := 'sample_id', n_iter := 3,
+  grid := '{"n_estimators": [30, 60, 90], "max_depth": [2, 4, 6]}');
+----
+3
+
+# n_iter beyond the grid size is clamped to the number of combinations (2)
+query I
+SELECT count(*) FROM xgboost.randomized_search((SELECT * FROM iris_xy),
+  estimator := 'xgb_classifier', target := 'target', id := 'sample_id', n_iter := 50,
+  grid := '{"n_estimators": [30, 60]}');
+----
+2
+
+# an unknown grid key is rejected at bind
+statement error
+SELECT * FROM xgboost.grid_search((SELECT * FROM iris_xy),
+  estimator := 'xgb_classifier', target := 'target', grid := '{"nonsense": [1, 2]}');
+----
+
+statement ok
+SELECT * FROM xgboost.drop_model('gs_best');
+
+statement ok
+DETACH xgboost;

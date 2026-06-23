@@ -28,6 +28,7 @@ import numpy as np
 import pyarrow as pa
 import xgboost
 from sklearn.model_selection import cross_val_predict as sk_cross_val_predict
+from sklearn.model_selection import cross_val_score as sk_cross_val_score
 from vgi.arguments import Arg, TableInput
 from vgi.invocation import BindResponse
 from vgi.metadata import FunctionExample
@@ -45,19 +46,34 @@ from vgi.table_in_out_function import TableInOutGenerator
 from vgi_rpc.log import Level
 from xgboost import XGBClassifier, XGBRegressor, XGBRFClassifier, XGBRFRegressor
 
-from .buffering import DrainState, SinkBuffer, input_schema_of, matrix
-from .registry import ModelMetadata, ModelNotFoundError, get_store, now_iso, validate_name
+from .buffering import DrainState, SinkBuffer, input_schema_of
+from .features import build_x_fit, build_x_predict, categorical_mask
+from .registry import (
+    ModelMetadata,
+    ModelNotFoundError,
+    get_store,
+    now_iso,
+    pack_model,
+    unpack_meta,
+    unpack_model,
+    validate_name,
+)
 from .schema_utils import field as sfield
 
 CLASSIFICATION = "classification"
 REGRESSION = "regression"
 
+# Defaults shared by every estimator: a fixed seed, and native categorical
+# support via the histogram tree method (so string features work without
+# one-hot encoding and missing values flow through as NaN).
+_COMMON_DEFAULTS: dict[str, Any] = {"random_state": 0, "enable_categorical": True, "tree_method": "hist"}
+
 # name -> (task, estimator class, default kwargs)
 _ESTIMATORS: dict[str, tuple[str, type, dict[str, Any]]] = {
-    "xgb_classifier": (CLASSIFICATION, XGBClassifier, {"random_state": 0}),
-    "xgb_regressor": (REGRESSION, XGBRegressor, {"random_state": 0}),
-    "xgb_rf_classifier": (CLASSIFICATION, XGBRFClassifier, {"random_state": 0}),
-    "xgb_rf_regressor": (REGRESSION, XGBRFRegressor, {"random_state": 0}),
+    "xgb_classifier": (CLASSIFICATION, XGBClassifier, dict(_COMMON_DEFAULTS)),
+    "xgb_regressor": (REGRESSION, XGBRegressor, dict(_COMMON_DEFAULTS)),
+    "xgb_rf_classifier": (CLASSIFICATION, XGBRFClassifier, dict(_COMMON_DEFAULTS)),
+    "xgb_rf_regressor": (REGRESSION, XGBRFRegressor, dict(_COMMON_DEFAULTS)),
 }
 
 
@@ -97,14 +113,23 @@ def build_estimator(name: str, params: dict[str, Any]) -> tuple[str, Any]:
         raise ValueError(f"invalid hyperparameters for {name!r}: {exc}") from exc
 
 
-def _xy(table: pa.Table, feature_names: list[str], target: str, task: str) -> tuple[np.ndarray, np.ndarray]:
-    x = matrix(table, feature_names)
+def _xy(
+    table: pa.Table, feature_names: list[str], target: str, task: str
+) -> tuple[Any, np.ndarray, list[bool], list[list[str] | None]]:
+    """Assemble ``(X, y, categorical_mask, categories)`` from a buffered table.
+
+    ``X`` is a pandas DataFrame so XGBoost can use native categorical + missing
+    handling. ``categories`` records each categorical column's category list for
+    reproducible scoring later.
+    """
+    cat_mask = categorical_mask([table.schema.field(n).type for n in feature_names])
+    x, categories = build_x_fit(table, feature_names, cat_mask)
     y = np.asarray(table.column(target).to_numpy(zero_copy_only=False))
     if task == CLASSIFICATION:  # noqa: SIM108 — explicit branches read clearer than a long ternary
         y = np.rint(y.astype(float)).astype(int)
     else:
         y = y.astype(float)
-    return x, y
+    return x, y, cat_mask, categories
 
 
 def _features_excluding(input_schema: pa.Schema, *exclude: str) -> list[str]:
@@ -129,7 +154,9 @@ def _prediction_field(task: str) -> pa.Field:
 @dataclass(slots=True, frozen=True)
 class FitArgs:
     data: Annotated[TableInput, Arg(0, doc="Training table (features + target [+ id]).")]
-    model_name: Annotated[str, Arg("model_name", default="", doc="Name to store the fitted model under (required).")]
+    model_name: Annotated[
+        str, Arg("model_name", default="", doc="Optional registry name; the model is always returned as a BLOB.")
+    ]
     estimator: Annotated[str, Arg("estimator", default="xgb_classifier", doc="Estimator name.")]
     target: Annotated[str, Arg("target", default="", doc="Name of the target/label column (required).")]
     id: Annotated[str, Arg("id", default="", doc="Optional id column to exclude from features.")]
@@ -138,7 +165,7 @@ class FitArgs:
 
 _FIT_SCHEMA = pa.schema(
     [
-        sfield("model_name", pa.string(), "Name the model was stored under.", nullable=False),
+        sfield("model_name", pa.string(), "Name the model was stored under ('' if not persisted).", nullable=False),
         sfield("estimator", pa.string(), "Estimator type used.", nullable=False),
         sfield("task", pa.string(), "classification or regression.", nullable=False),
         sfield("n_samples", pa.int64(), "Number of training rows.", nullable=False),
@@ -146,8 +173,74 @@ _FIT_SCHEMA = pa.schema(
         sfield("n_classes", pa.int64(), "Number of classes (NULL for regression)."),
         sfield("train_score", pa.float64(), "In-sample score (accuracy or R^2)."),
         sfield("features", pa.list_(pa.string()), "Ordered feature column names.", nullable=False),
+        sfield(
+            "model", pa.binary(), "The fitted model as a self-contained BLOB (estimator + metadata).", nullable=False
+        ),
     ]
 )
+
+
+def _fit_and_emit(
+    out: OutputCollector,
+    output_schema: pa.Schema,
+    *,
+    table: pa.Table | None,
+    input_schema: pa.Schema,
+    estimator_label: str,
+    task: str,
+    estimator: Any,
+    model_name: str,
+    target: str,
+    id_col: str,
+    params_dict: dict[str, Any],
+) -> None:
+    """Fit ``estimator`` on the buffered table, persist if named, emit summary + BLOB.
+
+    Shared by the generic ``fit`` and the typed ``fit_<estimator>`` functions.
+    """
+    if table is None or table.num_rows == 0:
+        raise ValueError("fit received no training rows")
+    feats = _features_excluding(input_schema, target, id_col)
+    x, y, cat_mask, categories = _xy(table, feats, target, task)
+    estimator.fit(x, y)
+    train_score = float(estimator.score(x, y))
+    classes = [int(c) for c in estimator.classes_] if task == CLASSIFICATION else None
+
+    meta = ModelMetadata(
+        name=model_name,
+        estimator=estimator_label,
+        task=task,
+        target=target,
+        feature_names=feats,
+        categorical=cat_mask,
+        categories=categories,
+        params=params_dict,
+        classes=classes,
+        n_samples=int(table.num_rows),
+        n_features=len(feats),
+        train_score=train_score,
+        xgboost_version=xgboost.__version__,
+        created_at=now_iso(),
+    )
+    if model_name:
+        get_store().save(estimator, meta)
+
+    out.emit(
+        pa.RecordBatch.from_pydict(
+            {
+                "model_name": [model_name],
+                "estimator": [estimator_label],
+                "task": [task],
+                "n_samples": [meta.n_samples],
+                "n_features": [meta.n_features],
+                "n_classes": [len(classes) if classes is not None else None],
+                "train_score": [train_score],
+                "features": [feats],
+                "model": [pack_model(estimator, meta)],
+            },
+            schema=output_schema,
+        )
+    )
 
 
 class FitModel(SinkBuffer[FitArgs, DrainState]):
@@ -172,9 +265,10 @@ class FitModel(SinkBuffer[FitArgs, DrainState]):
     @classmethod
     def on_bind(cls, params: BindParams[FitArgs]) -> BindResponse:
         a = params.args
-        if not a.model_name:
-            raise ValueError("fit requires 'model_name' (e.g. model_name := 'my_model')")
-        validate_name(a.model_name)
+        # model_name is optional: the model is always returned as a BLOB; when a
+        # name is given it is also persisted to the registry.
+        if a.model_name:
+            validate_name(a.model_name)
         if not a.target:
             raise ValueError("fit requires 'target' (the label column name, e.g. target := 'label')")
         # Validate estimator + hyperparameters now so errors surface at bind.
@@ -205,49 +299,20 @@ class FitModel(SinkBuffer[FitArgs, DrainState]):
         state.done = True
 
         a = params.args
-        input_schema = input_schema_of(params)
-        feats = _features_excluding(input_schema, a.target, a.id)
         task, estimator = build_estimator(a.estimator, _parse_params(a.params))
-
-        table = cls.buffered_table(params, input_schema)
-        if table is None or table.num_rows == 0:
-            raise ValueError("fit received no training rows")
-
-        x, y = _xy(table, feats, a.target, task)
-        estimator.fit(x, y)
-        train_score = float(estimator.score(x, y))
-        classes = [int(c) for c in estimator.classes_] if task == CLASSIFICATION else None
-
-        meta = ModelMetadata(
-            name=a.model_name,
-            estimator=a.estimator,
+        table = cls.buffered_table(params, input_schema_of(params))
+        _fit_and_emit(
+            out,
+            params.output_schema,
+            table=table,
+            input_schema=input_schema_of(params),
+            estimator_label=a.estimator,
             task=task,
+            estimator=estimator,
+            model_name=a.model_name,
             target=a.target,
-            feature_names=feats,
-            params=_parse_params(a.params),
-            classes=classes,
-            n_samples=int(table.num_rows),
-            n_features=len(feats),
-            train_score=train_score,
-            xgboost_version=xgboost.__version__,
-            created_at=now_iso(),
-        )
-        get_store().save(estimator, meta)
-
-        out.emit(
-            pa.RecordBatch.from_pydict(
-                {
-                    "model_name": [a.model_name],
-                    "estimator": [a.estimator],
-                    "task": [task],
-                    "n_samples": [meta.n_samples],
-                    "n_features": [meta.n_features],
-                    "n_classes": [len(classes) if classes is not None else None],
-                    "train_score": [train_score],
-                    "features": [feats],
-                },
-                schema=params.output_schema,
-            )
+            id_col=a.id,
+            params_dict=_parse_params(a.params),
         )
 
 
@@ -259,10 +324,22 @@ class FitModel(SinkBuffer[FitArgs, DrainState]):
 @dataclass(slots=True, frozen=True)
 class PredictArgs:
     data: Annotated[TableInput, Arg(0, doc="Table to score (must contain the model's feature columns).")]
-    model_name: Annotated[str, Arg("model_name", default="", doc="Name of a stored model (required).")]
+    model_name: Annotated[
+        str, Arg("model_name", default="", doc="Name of a model in the registry. Provide this OR model.")
+    ]
+    model: Annotated[
+        bytes, Arg("model", default=b"", doc="A model BLOB (as returned by fit). Provide this OR model_name.")
+    ]
     id: Annotated[str, Arg("id", default="", doc="Optional id column to carry through.")]
     with_proba: Annotated[
         bool, Arg("with_proba", default=False, doc="Also emit per-class probabilities (classifiers).")
+    ]
+    output_margin: Annotated[
+        bool, Arg("output_margin", default=False, doc="Emit the raw (untransformed) margin score instead of the label.")
+    ]
+    pred_leaf: Annotated[
+        bool,
+        Arg("pred_leaf", default=False, doc="Emit the leaf index each tree assigns the row (a list per row)."),
     ]
 
 
@@ -296,14 +373,21 @@ class PredictModel(TableInOutGenerator[PredictArgs]):
     @classmethod
     def on_bind(cls, params: BindParams[PredictArgs]) -> BindResponse:
         a = params.args
-        if not a.model_name:
-            raise ValueError("predict requires 'model_name' (e.g. model_name := 'my_model')")
+        if not a.model_name and not a.model:
+            raise ValueError("predict requires either 'model_name' (a registry name) or 'model' (a model BLOB)")
+        if a.with_proba and (a.output_margin or a.pred_leaf):
+            raise ValueError("with_proba cannot be combined with output_margin or pred_leaf")
+        if a.output_margin and a.pred_leaf:
+            raise ValueError("output_margin and pred_leaf are mutually exclusive")
         input_schema = params.bind_call.input_schema
         assert input_schema is not None
-        try:
-            meta = get_store().load_meta(a.model_name)
-        except ModelNotFoundError as exc:
-            raise ValueError(f"model {a.model_name!r} not found in the registry") from exc
+        if a.model_name:
+            try:
+                meta = get_store().load_meta(a.model_name)
+            except ModelNotFoundError as exc:
+                raise ValueError(f"model {a.model_name!r} not found in the registry") from exc
+        else:
+            meta = unpack_meta(a.model)
 
         # Fail fast at bind if the input is missing any feature the model needs.
         # (predict selects features by name, so order doesn't matter and extra
@@ -319,7 +403,14 @@ class PredictModel(TableInOutGenerator[PredictArgs]):
         fields: list[pa.Field] = []
         if a.id:
             fields.append(input_schema.field(a.id))
-        fields.append(_prediction_field(meta.task))
+        if a.pred_leaf:
+            fields.append(
+                sfield("leaf", pa.list_(pa.int32()), "Leaf index this row reaches in each tree.", nullable=False)
+            )
+        elif a.output_margin:
+            fields.append(sfield("margin", pa.float64(), "Raw (untransformed) margin score.", nullable=False))
+        else:
+            fields.append(_prediction_field(meta.task))
         if a.with_proba and meta.task == CLASSIFICATION:
             for c in cls._proba_classes(meta):
                 fields.append(sfield(f"proba_{c}", pa.float64(), f"P(class = {c}).", nullable=False))
@@ -331,7 +422,8 @@ class PredictModel(TableInOutGenerator[PredictArgs]):
         key = params.init_response.execution_id
         cached = _PREDICT_CACHE.get(key)
         if cached is None:
-            cached = get_store().load(params.args.model_name)
+            a = params.args
+            cached = get_store().load(a.model_name) if a.model_name else unpack_model(a.model)
             _PREDICT_CACHE[key] = cached
         return cached
 
@@ -353,21 +445,36 @@ class PredictModel(TableInOutGenerator[PredictArgs]):
             with contextlib.suppress(Exception):
                 out.client_log(
                     Level.WARN,
-                    f"model {a.model_name!r} was fitted with xgboost {meta.xgboost_version}, "
+                    f"model {(a.model_name or '<blob>')!r} was fitted with xgboost {meta.xgboost_version}, "
                     f"worker has {xgboost.__version__}; predictions may differ",
                 )
 
-        x = matrix(pa.Table.from_batches([batch]), meta.feature_names)
+        cat_mask = meta.categorical or [False] * len(meta.feature_names)
+        x = build_x_predict(pa.Table.from_batches([batch]), meta.feature_names, cat_mask, meta.categories)
 
         columns: dict[str, list[Any]] = {}
         if a.id:
             columns[a.id] = batch.column(a.id).to_pylist()
 
-        preds = estimator.predict(x)
-        if meta.task == CLASSIFICATION:
-            columns["prediction"] = [int(v) for v in preds]
+        if a.pred_leaf:
+            # pred_leaf lives on the Booster, not the scikit-learn wrapper's predict().
+            booster = estimator.get_booster()
+            dmat = xgboost.DMatrix(x, enable_categorical=True)
+            leaves = np.atleast_2d(booster.predict(dmat, pred_leaf=True))
+            columns["leaf"] = [[int(v) for v in row] for row in leaves]
+        elif a.output_margin:
+            margin = estimator.predict(x, output_margin=True)
+            margin = np.asarray(margin)
+            # multiclass margin is 2D; collapse to the chosen class's margin for a scalar column
+            if margin.ndim > 1:
+                margin = margin.max(axis=1)
+            columns["margin"] = [float(v) for v in margin]
         else:
-            columns["prediction"] = [float(v) for v in preds]
+            preds = estimator.predict(x)
+            if meta.task == CLASSIFICATION:
+                columns["prediction"] = [int(v) for v in preds]
+            else:
+                columns["prediction"] = [float(v) for v in preds]
 
         if a.with_proba and meta.task == CLASSIFICATION:
             proba = estimator.predict_proba(x)
@@ -459,7 +566,7 @@ class CrossValPredict(SinkBuffer[CrossValArgs, DrainState]):
             )
             return
 
-        x, y = _xy(table, feats, a.target, task)
+        x, y, _cat_mask, _categories = _xy(table, feats, a.target, task)
         preds = sk_cross_val_predict(estimator, x, y, cv=a.cv)
 
         columns: dict[str, list[Any]] = {}
@@ -467,6 +574,100 @@ class CrossValPredict(SinkBuffer[CrossValArgs, DrainState]):
             columns[a.id] = table.column(a.id).to_pylist()
         columns["prediction"] = [int(v) for v in preds] if task == CLASSIFICATION else [float(v) for v in preds]
         out.emit(pa.RecordBatch.from_pydict(columns, schema=params.output_schema))
+
+
+# ===========================================================================
+# cross_val_score (per-fold held-out scores, no persistence)
+# ===========================================================================
+
+
+@dataclass(slots=True, frozen=True)
+class CrossValScoreArgs:
+    data: Annotated[TableInput, Arg(0, doc="Training table (features + target [+ id]).")]
+    estimator: Annotated[str, Arg("estimator", default="xgb_classifier", doc="Estimator name.")]
+    target: Annotated[str, Arg("target", default="", doc="Name of the target/label column (required).")]
+    id: Annotated[str, Arg("id", default="", doc="Optional id column to exclude from features.")]
+    params: Annotated[str, Arg("params", default="", doc="JSON object of hyperparameters.")]
+    cv: Annotated[int, Arg("cv", default=5, doc="Number of cross-validation folds.")]
+    scoring: Annotated[str, Arg("scoring", default="", doc="Scorer name (default: the estimator's own scorer).")]
+
+
+_CV_SCORE_SCHEMA = pa.schema(
+    [
+        sfield("fold", pa.int64(), "Cross-validation fold index (0-based).", nullable=False),
+        sfield("score", pa.float64(), "Held-out score for this fold.", nullable=False),
+    ]
+)
+
+
+class CrossValScore(SinkBuffer[CrossValScoreArgs, DrainState]):
+    FunctionArguments: ClassVar[type] = CrossValScoreArgs
+
+    class Meta:
+        name = "cross_val_score"
+        description = "Cross-validated held-out scores, one row per fold (no model is stored)"
+        categories = ["models", "supervised", "evaluation"]
+        examples = [
+            FunctionExample(
+                sql=(
+                    "SELECT fold, score FROM xgboost.cross_val_score("
+                    "(SELECT sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target "
+                    "FROM xgboost.iris()), estimator => 'xgb_classifier', target => 'target')"
+                ),
+                description="5-fold accuracy of an XGBoost classifier on iris",
+            )
+        ]
+
+    @classmethod
+    def on_bind(cls, params: BindParams[CrossValScoreArgs]) -> BindResponse:
+        a = params.args
+        if not a.target:
+            raise ValueError("cross_val_score requires 'target' (the label column name, e.g. target := 'label')")
+        build_estimator(a.estimator, _parse_params(a.params))
+        input_schema = params.bind_call.input_schema
+        assert input_schema is not None
+        if a.target not in input_schema.names:
+            raise ValueError(
+                f"target column {a.target!r} not found in input; columns: {', '.join(input_schema.names)}"
+            )
+        return BindResponse(output_schema=_CV_SCORE_SCHEMA)
+
+    @classmethod
+    def initial_finalize_state(
+        cls, finalize_state_id: bytes, params: TableBufferingParams[CrossValScoreArgs]
+    ) -> DrainState:
+        return DrainState()
+
+    @classmethod
+    def finalize(
+        cls,
+        params: TableBufferingParams[CrossValScoreArgs],
+        finalize_state_id: bytes,
+        state: DrainState,
+        out: OutputCollector,
+    ) -> None:
+        if state.done:
+            out.finish()
+            return
+        state.done = True
+
+        a = params.args
+        input_schema = input_schema_of(params)
+        feats = _features_excluding(input_schema, a.target, a.id)
+        task, estimator = build_estimator(a.estimator, _parse_params(a.params))
+
+        table = cls.buffered_table(params, input_schema)
+        if table is None or table.num_rows == 0:
+            raise ValueError("cross_val_score received no training rows")
+
+        x, y, _cat_mask, _categories = _xy(table, feats, a.target, task)
+        scores = sk_cross_val_score(estimator, x, y, cv=a.cv, scoring=(a.scoring or None))
+        out.emit(
+            pa.RecordBatch.from_pydict(
+                {"fold": list(range(len(scores))), "score": [float(s) for s in scores]},
+                schema=params.output_schema,
+            )
+        )
 
 
 # ===========================================================================
@@ -606,6 +807,7 @@ MODEL_FUNCTIONS: list[type] = [
     FitModel,
     PredictModel,
     CrossValPredict,
+    CrossValScore,
     ListModels,
     ModelInfo,
     DropModel,

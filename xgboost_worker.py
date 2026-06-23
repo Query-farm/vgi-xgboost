@@ -6,6 +6,7 @@
 #     "xgboost>=2.0",
 #     "scikit-learn>=1.5",
 #     "numpy",
+#     "pandas",
 # ]
 # ///
 """VGI worker exposing XGBoost to DuckDB/SQL.
@@ -36,6 +37,8 @@ from vgi_xgboost import __version__
 from vgi_xgboost.datasets import DATASET_FUNCTIONS
 from vgi_xgboost.importance import IMPORTANCE_FUNCTIONS
 from vgi_xgboost.models import MODEL_FUNCTIONS
+from vgi_xgboost.search import SEARCH_FUNCTIONS
+from vgi_xgboost.typed_models import TYPED_FIT_FUNCTIONS
 
 log = logging.getLogger(__name__)
 
@@ -46,6 +49,8 @@ GIT_COMMIT = os.environ.get("VGI_XGBOOST_GIT_COMMIT") or "unknown"
 _FUNCTIONS: list[type] = [
     *DATASET_FUNCTIONS,
     *MODEL_FUNCTIONS,
+    *TYPED_FIT_FUNCTIONS,
+    *SEARCH_FUNCTIONS,
     *IMPORTANCE_FUNCTIONS,
 ]
 

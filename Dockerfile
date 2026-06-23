@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir \
         "xgboost>=2.0" \
         "scikit-learn>=1.5" \
         numpy \
+        pandas \
     && pip uninstall -y pip
 
 COPY vgi_xgboost /app/vgi_xgboost

@@ -59,6 +59,48 @@ JOIN xgboost.predict((SELECT * FROM diab_x), model_name => 'diab_imp', id => 'sa
 ----
 true
 
+# ---- shap_values: long format, one row per (sample, feature) ----
+
+query II
+SELECT count(*), count(DISTINCT feature)
+FROM xgboost.shap_values((SELECT * FROM diab_x), model_name => 'diab_imp', id => 'sample_id');
+----
+4420	10
+
+# the long-format SHAP value for a feature matches the wide explain contribution
+query I
+SELECT bool_and(abs(s.shap_value - e.contrib_bmi) < 1e-5)
+FROM xgboost.shap_values((SELECT * FROM diab_x), model_name => 'diab_imp', id => 'sample_id') s
+JOIN xgboost.explain((SELECT * FROM diab_x), model_name => 'diab_imp', id => 'sample_id') e
+  USING (sample_id)
+WHERE s.feature = 'bmi';
+----
+true
+
+# ---- permutation_importance: one row per feature, drop in score when shuffled ----
+
+query I
+SELECT count(*) FROM xgboost.permutation_importance((SELECT * FROM xgboost.diabetes()),
+  model_name => 'diab_imp', target => 'target', n_repeats => 3);
+----
+10
+
+# ---- cross_val_score: one held-out score per fold, no model stored ----
+
+query I
+SELECT count(*) FROM xgboost.cross_val_score(
+  (SELECT sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target FROM xgboost.iris()),
+  estimator => 'xgb_classifier', target => 'target', cv => 4);
+----
+4
+
+query I
+SELECT avg(score) > 0.8 FROM xgboost.cross_val_score(
+  (SELECT sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target FROM xgboost.iris()),
+  estimator => 'xgb_classifier', target => 'target', cv => 4);
+----
+true
+
 # ---- explain rejects multiclass models with a clear error ----
 
 statement ok
