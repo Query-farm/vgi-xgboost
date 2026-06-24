@@ -14,7 +14,7 @@ jobs:
     name: lint • types • unit • sql
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v5
         with:
@@ -44,7 +44,7 @@ jobs:
     name: vgi-lint-check (metadata quality)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
       - name: Install the worker
         run: uv venv && uv pip install -e .
@@ -62,7 +62,7 @@ jobs:
     name: docker build • smoke
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build image
         run: docker build --build-arg GIT_COMMIT=${GITHUB_SHA::8} -t vgi-xgboost:ci .
