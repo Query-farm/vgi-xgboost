@@ -40,6 +40,7 @@ from vgi.table_function import BindParams
 from .buffering import DrainState, SinkBuffer, input_schema_of
 from .models import _ESTIMATORS, _features_excluding, _xy, build_estimator
 from .registry import ModelMetadata, get_store, now_iso, pack_model, validate_name
+from .schema_utils import columns_md
 from .schema_utils import field as sfield
 from .typed_models import _HPARAMS, _UNSET
 
@@ -213,6 +214,7 @@ class GridSearch(SinkBuffer[GridSearchArgs, DrainState]):
         name = "grid_search"
         description = "Cross-validated grid search over an XGBoost estimator's hyperparameters"
         categories = ["models", "supervised", "tuning"]
+        tags = {"vgi.columns_md": columns_md(_SEARCH_SCHEMA)}
         examples = [
             FunctionExample(
                 sql=(
@@ -279,6 +281,7 @@ class RandomizedSearch(SinkBuffer[RandomizedSearchArgs, DrainState]):
         name = "randomized_search"
         description = "Cross-validated randomized search: sample n_iter hyperparameter combinations"
         categories = ["models", "supervised", "tuning"]
+        tags = {"vgi.columns_md": columns_md(_SEARCH_SCHEMA)}
         examples = [
             FunctionExample(
                 sql=(

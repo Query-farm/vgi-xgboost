@@ -40,6 +40,24 @@ jobs:
           VGI_SIGNING_KEY: dev
         run: pytest tests/test_sql_haybarn.py -o "addopts=" -q
 
+  lint-metadata:
+    name: vgi-lint-check (metadata quality)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install the worker
+        run: pip install -e .
+      - name: Lint worker metadata
+        uses: Query-farm/vgi-lint-check@v1
+        with:
+          # vgi-lint spawns this as a subprocess; the package (+ deps) is
+          # installed into the setup-python interpreter on PATH.
+          location: python xgboost_worker.py
+          fail-on: warning
+
   docker:
     name: docker build • smoke
     runs-on: ubuntu-latest

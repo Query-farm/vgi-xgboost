@@ -34,7 +34,7 @@ from vgi.table_function import (
 )
 from vgi_rpc.rpc import OutputCollector
 
-from .schema_utils import NoArgs, dedupe_names, field, snake_case
+from .schema_utils import NoArgs, columns_md, columns_md_rows, dedupe_names, field, snake_case
 
 _RESERVED = {"sample_id", "target", "target_name"}
 
@@ -167,6 +167,7 @@ class IrisFunction(_ToyDataset):
         description = "Fisher's iris dataset (150 samples, 4 features, 3 species)"
         categories = ["datasets", "classification"]
         projection_pushdown = True
+        tags = {"vgi.columns_md": columns_md(_IRIS_SCHEMA)}
         examples = [
             FunctionExample(sql="SELECT * FROM xgboost.iris()", description="Load the full iris dataset"),
             FunctionExample(
@@ -189,6 +190,7 @@ class WineFunction(_ToyDataset):
         description = "Wine recognition dataset (178 samples, 13 features, 3 classes)"
         categories = ["datasets", "classification"]
         projection_pushdown = True
+        tags = {"vgi.columns_md": columns_md(_WINE_SCHEMA)}
         examples = [FunctionExample(sql="SELECT * FROM xgboost.wine()", description="Load the wine dataset")]
 
 
@@ -205,6 +207,7 @@ class BreastCancerFunction(_ToyDataset):
         description = "Breast cancer Wisconsin diagnostic (569 samples, 30 features, 2 classes)"
         categories = ["datasets", "classification"]
         projection_pushdown = True
+        tags = {"vgi.columns_md": columns_md(_CANCER_SCHEMA)}
         examples = [
             FunctionExample(sql="SELECT * FROM xgboost.breast_cancer()", description="Load the breast cancer dataset")
         ]
@@ -224,6 +227,7 @@ class DiabetesFunction(_ToyDataset):
         description = "Diabetes progression regression (442 samples, 10 features)"
         categories = ["datasets", "regression"]
         projection_pushdown = True
+        tags = {"vgi.columns_md": columns_md(_DIABETES_SCHEMA)}
         examples = [FunctionExample(sql="SELECT * FROM xgboost.diabetes()", description="Load the diabetes dataset")]
 
 
@@ -248,6 +252,7 @@ class CaliforniaHousingFunction(TableFunctionGenerator[NoArgs]):
         description = "California housing prices (20640 districts, 8 features, regression)"
         categories = ["datasets", "regression", "fetched"]
         projection_pushdown = True
+        tags = {"vgi.columns_md": columns_md(_CALIFORNIA_SCHEMA)}
         examples = [
             FunctionExample(
                 sql="SELECT * FROM xgboost.california_housing()",
@@ -290,6 +295,15 @@ class MakeClassificationFunction(TableFunctionGenerator[MakeClassificationArgs])
         description = "Generate a synthetic classification dataset"
         categories = ["datasets", "synthetic", "classification"]
         projection_pushdown = True
+        tags = {
+            "vgi.columns_md": columns_md_rows(
+                [
+                    ("sample_id", "INTEGER", "Row index within the generated sample (0-based)."),
+                    ("target", "INTEGER", "Integer class label (0-based)."),
+                ],
+                note="Plus one `feature_<i>` DOUBLE column per feature (count set by `n_features`).",
+            )
+        }
         examples = [
             FunctionExample(
                 sql="SELECT * FROM xgboost.make_classification(n_samples => 500, n_features => 5, n_classes => 3)",
@@ -348,6 +362,15 @@ class MakeRegressionFunction(TableFunctionGenerator[MakeRegressionArgs]):
         description = "Generate a synthetic regression dataset"
         categories = ["datasets", "synthetic", "regression"]
         projection_pushdown = True
+        tags = {
+            "vgi.columns_md": columns_md_rows(
+                [
+                    ("sample_id", "INTEGER", "Row index within the generated sample (0-based)."),
+                    ("target", "DOUBLE", "Continuous regression target."),
+                ],
+                note="Plus one `feature_<i>` DOUBLE column per feature (count set by `n_features`).",
+            )
+        }
         examples = [
             FunctionExample(
                 sql="SELECT * FROM xgboost.make_regression(n_samples => 500, n_features => 4, noise => 5.0)",
