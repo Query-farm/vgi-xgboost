@@ -45,17 +45,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
+      - uses: astral-sh/setup-uv@v6
       - name: Install the worker
-        run: pip install -e .
+        run: uv venv && uv pip install -e .
       - name: Lint worker metadata
         uses: Query-farm/vgi-lint-check@v1
         with:
-          # vgi-lint spawns this as a subprocess; the package (+ deps) is
-          # installed into the setup-python interpreter on PATH.
-          location: python xgboost_worker.py
+          # vgi-lint spawns this as a subprocess. Point at the venv interpreter
+          # by path (not bare `python`): the action runs vgi-lint under uvx,
+          # whose isolated env would otherwise shadow `python` and miss the
+          # worker's deps (ModuleNotFoundError: No module named 'vgi').
+          location: .venv/bin/python xgboost_worker.py
           fail-on: warning
 
   docker:
