@@ -1,0 +1,44 @@
+# Copyright 2026 Query Farm LLC - https://query.farm
+#
+# Build and publish the multi-arch vgi-xgboost image to ghcr.io. The heavy
+# lifting (multi-arch build → smoke → push → manifest → cosign-sign) lives in
+# the shared reusable workflow Query-farm/vgi-actions; this file gates on the
+# repo's own test suite and supplies the worker-specific inputs.
+#
+# Tag-driven: vX.Y.Z -> :X.Y.Z/:X.Y/:latest, push to main -> :edge. Decoupled
+# from the PyPI publish. Publishing a GitHub Release creates the tag, which
+# fires this too.
+name: Publish image to ghcr.io
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Gate every image on the repo's full test suite, so a broken worker is never
+  # imaged.
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: [ci]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    uses: Query-farm/vgi-actions/.github/workflows/docker-publish.yml@v1
+    secrets: inherit
+    with:
+      image_name: vgi-xgboost
+      smoke_import: "vgi_xgboost, xgboost, sklearn, numpy, pandas"
+      http_run_args: "-e VGI_SIGNING_KEY=dev"

@@ -1,0 +1,15 @@
+# Keep the Docker build context small and deterministic. The image installs the
+# worker's deps explicitly via pip then COPYs the package, so it only needs the
+# package, both transport entrypoints, and the dispatcher — not local dev/test
+# artifacts.
+*
+
+# Re-include exactly what the build needs.
+!vgi_xgboost/
+!xgboost_worker.py
+!serve.py
+!docker-entrypoint.sh
+
+# Even within the re-included tree, never ship caches.
+**/__pycache__/
+**/*.pyc

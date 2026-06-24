@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Allow the publish workflow (docker-publish.yml) to gate on this suite.
+  workflow_call: {}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -57,27 +59,3 @@ jobs:
           # worker's deps (ModuleNotFoundError: No module named 'vgi').
           location: .venv/bin/python xgboost_worker.py
           fail-on: warning
-
-  docker:
-    name: docker build • smoke
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Build image
-        run: docker build --build-arg GIT_COMMIT=${GITHUB_SHA::8} -t vgi-xgboost:ci .
-
-      - name: Smoke test (imports + HTTP /health)
-        run: |
-          docker run --rm -e VGI_SIGNING_KEY=dev vgi-xgboost:ci \
-            python -c "from xgboost_worker import XGBoostWorker; import serve; print('imports OK')"
-          CID=$(docker run -d -e VGI_SIGNING_KEY=dev -p 18000:8000 vgi-xgboost:ci)
-          trap "docker rm -f $CID >/dev/null" EXIT
-          for i in $(seq 1 15); do
-            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:18000/health || true)
-            case "$code" in 200|401|403|404) echo "HTTP server responding ($code)"; exit 0;; esac
-            sleep 1
-          done
-          echo "container did not respond on /health" >&2
-          docker logs "$CID" >&2
-          exit 1
