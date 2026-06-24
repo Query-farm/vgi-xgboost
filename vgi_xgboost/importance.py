@@ -3,10 +3,14 @@
 * ``feature_importance`` -- the booster's per-feature importance (weight / gain /
   cover) for a stored model, one row per feature, ranked.
 * ``explain``            -- SHAP-style per-row prediction contributions
-  (``pred_contribs``): how much each feature pushed each row's raw margin away
-  from the model's base value. Streams a table through the model like
-  ``predict``. Supported for regression and binary classification (multiclass
-  contributions are 3D and not emitted).
+  (``pred_contribs``) in **long format** ``(row, [class], feature, shap_value,
+  base_value)``: how much each feature pushed each row's raw margin away from the
+  model's base value. Streams a table through the model like ``predict`` and
+  supports multiclass (one row per (row, class, feature)).
+* ``permutation_importance`` -- model-agnostic ranked importance: the drop in
+  score when each feature is shuffled.
+* ``partial_dependence`` -- how the model's average prediction moves as one
+  numeric feature varies over a grid (one curve per class for multiclass).
 
     SELECT * FROM xgboost.feature_importance('iris_clf', importance_type => 'gain');
     SELECT * FROM xgboost.explain((SELECT * FROM new_data), model_name => 'house_reg', id => 'id');
@@ -20,6 +24,7 @@ from typing import Annotated, Any, ClassVar
 import numpy as np
 import pyarrow as pa
 import xgboost
+from sklearn.inspection import partial_dependence as sk_partial_dependence
 from sklearn.inspection import permutation_importance as sk_permutation_importance
 from vgi.arguments import Arg, TableInput
 from vgi.invocation import BindResponse
@@ -42,9 +47,29 @@ from .buffering import DrainState, SinkBuffer, input_schema_of
 from .features import build_x_predict
 from .models import CLASSIFICATION
 from .registry import ModelMetadata, ModelNotFoundError, get_store, unpack_meta, unpack_model
+from .schema_utils import columns_md, columns_md_rows
 from .schema_utils import field as sfield
 
 _IMPORTANCE_TYPES = {"weight", "gain", "cover", "total_gain", "total_cover"}
+
+
+def _resolve_meta(model_name: str, model: bytes) -> ModelMetadata:
+    """Read a model's metadata from a BLOB if given, else from the registry by name."""
+    if model:
+        return unpack_meta(model)
+    if not model_name:
+        raise ValueError("requires either a 'model_name' (a registry name) or 'model' (a model BLOB)")
+    try:
+        return get_store().load_meta(model_name)
+    except ModelNotFoundError as exc:
+        raise ValueError(f"model {model_name!r} not found in the registry") from exc
+
+
+def _resolve_model(model_name: str, model: bytes) -> tuple[Any, ModelMetadata]:
+    """Load a model (estimator + metadata) from a BLOB if given, else the registry."""
+    if model:
+        return unpack_model(model)
+    return get_store().load(model_name)
 
 
 # ===========================================================================
@@ -54,7 +79,10 @@ _IMPORTANCE_TYPES = {"weight", "gain", "cover", "total_gain", "total_cover"}
 
 @dataclass(slots=True, frozen=True)
 class FeatureImportanceArgs:
-    model_name: Annotated[str, Arg(0, doc="Name of a stored model.")]
+    model_name: Annotated[str, Arg(0, doc="Name of a stored model (pass '' to use model:= instead).")]
+    model: Annotated[
+        bytes, Arg("model", default=b"", doc="A model BLOB (as returned by fit). Provide this OR model_name.")
+    ]
     importance_type: Annotated[
         str,
         Arg("importance_type", default="gain", doc="weight, gain, cover, total_gain, or total_cover."),
@@ -79,6 +107,7 @@ class FeatureImportance(TableFunctionGenerator[FeatureImportanceArgs]):
         name = "feature_importance"
         description = "Per-feature importance (weight/gain/cover) for a stored model, ranked"
         categories = ["models", "interpretation"]
+        tags = {"vgi.columns_md": columns_md(_IMPORTANCE_SCHEMA)}
         examples = [
             FunctionExample(
                 sql="SELECT * FROM xgboost.feature_importance('iris_clf', importance_type => 'gain')",
@@ -93,10 +122,7 @@ class FeatureImportance(TableFunctionGenerator[FeatureImportanceArgs]):
             raise ValueError(
                 f"invalid importance_type {a.importance_type!r}; choose one of: {', '.join(sorted(_IMPORTANCE_TYPES))}"
             )
-        try:
-            get_store().load_meta(a.model_name)
-        except ModelNotFoundError as exc:
-            raise ValueError(f"model {a.model_name!r} not found in the registry") from exc
+        _resolve_meta(a.model_name, a.model)
         return BindResponse(output_schema=cls.FIXED_SCHEMA)
 
     @classmethod
@@ -106,15 +132,12 @@ class FeatureImportance(TableFunctionGenerator[FeatureImportanceArgs]):
     @classmethod
     def process(cls, params: ProcessParams[FeatureImportanceArgs], state: None, out: OutputCollector) -> None:
         a = params.args
-        estimator, meta = get_store().load(a.model_name)
+        estimator, meta = _resolve_model(a.model_name, a.model)
         booster = estimator.get_booster()
         # Models are fit on a numpy matrix, so the booster names features f0..fN
         # in feature order; fall back to the stored name in case names were set.
         scores = booster.get_score(importance_type=a.importance_type)
-        rows = [
-            (name, float(scores.get(f"f{i}", scores.get(name, 0.0))))
-            for i, name in enumerate(meta.feature_names)
-        ]
+        rows = [(name, float(scores.get(f"f{i}", scores.get(name, 0.0)))) for i, name in enumerate(meta.feature_names)]
         rows.sort(key=lambda r: r[1], reverse=True)
         out.emit(
             pa.RecordBatch.from_pydict(
@@ -143,34 +166,10 @@ class ExplainArgs:
     model: Annotated[
         bytes, Arg("model", default=b"", doc="A model BLOB (as returned by fit). Provide this OR model_name.")
     ]
-    id: Annotated[str, Arg("id", default="", doc="Optional id column to carry through.")]
+    id: Annotated[str, Arg("id", default="", doc="Optional id column to carry through onto every emitted row.")]
 
 
 _EXPLAIN_CACHE: dict[bytes, tuple[Any, ModelMetadata]] = {}
-
-
-def _contrib_name(feature: str) -> str:
-    return f"contrib_{feature}"
-
-
-def _explain_meta(a: Any) -> ModelMetadata:
-    if a.model_name:
-        try:
-            return get_store().load_meta(a.model_name)
-        except ModelNotFoundError as exc:
-            raise ValueError(f"model {a.model_name!r} not found in the registry") from exc
-    return unpack_meta(a.model)
-
-
-def _explain_model(cache: dict[bytes, tuple[Any, ModelMetadata]], params: Any) -> tuple[Any, ModelMetadata]:
-    assert params.init_response is not None
-    key = params.init_response.execution_id
-    cached = cache.get(key)
-    if cached is None:
-        a = params.args
-        cached = get_store().load(a.model_name) if a.model_name else unpack_model(a.model)
-        cache[key] = cached
-    return cached
 
 
 class ExplainModel(TableInOutGenerator[ExplainArgs]):
@@ -178,8 +177,22 @@ class ExplainModel(TableInOutGenerator[ExplainArgs]):
 
     class Meta:
         name = "explain"
-        description = "Per-row SHAP feature contributions toward the model's raw margin (base_value + contrib_*)"
+        description = "Per-row SHAP feature contributions, long format (row, [class], feature, shap_value, base_value)"
         categories = ["models", "interpretation", "inference"]
+        tags = {
+            "vgi.columns_md": columns_md_rows(
+                [
+                    ("feature", "VARCHAR", "Feature column name."),
+                    ("shap_value", "DOUBLE", "Contribution of the feature to the raw margin."),
+                    ("base_value", "DOUBLE", "Model base (expected) raw-margin value."),
+                ],
+                note=(
+                    "Long format: one row per (input row, feature). If an `id` column is named, it is carried "
+                    "through as the first column. For multiclass models a `class` BIGINT column is added "
+                    "(one row per (input row, class, feature))."
+                ),
+            )
+        }
         examples = [
             FunctionExample(
                 sql=(
@@ -197,18 +210,12 @@ class ExplainModel(TableInOutGenerator[ExplainArgs]):
             raise ValueError("explain requires either 'model_name' (a registry name) or 'model' (a model BLOB)")
         input_schema = params.bind_call.input_schema
         assert input_schema is not None
-        meta = _explain_meta(a)
-
-        if meta.task == CLASSIFICATION and meta.classes is not None and len(meta.classes) > 2:
-            raise ValueError(
-                f"explain supports regression and binary classification; model {a.model_name!r} has "
-                f"{len(meta.classes)} classes (multiclass contributions are not emitted)"
-            )
+        meta = _resolve_meta(a.model_name, a.model)
 
         missing = [f for f in meta.feature_names if f not in input_schema.names]
         if missing:
             raise ValueError(
-                f"model {a.model_name!r} requires feature column(s) {', '.join(missing)} "
+                f"model requires feature column(s) {', '.join(missing)} "
                 f"not present in the input; model features: {', '.join(meta.feature_names)}; "
                 f"input columns: {', '.join(input_schema.names)}"
             )
@@ -216,16 +223,25 @@ class ExplainModel(TableInOutGenerator[ExplainArgs]):
         fields: list[pa.Field] = []
         if a.id:
             fields.append(input_schema.field(a.id))
+        multiclass = meta.task == CLASSIFICATION and meta.classes is not None and len(meta.classes) > 2
+        if multiclass:
+            fields.append(sfield("class", pa.int64(), "Class index the contribution applies to.", nullable=False))
+        fields.append(sfield("feature", pa.string(), "Feature column name.", nullable=False))
+        fields.append(
+            sfield("shap_value", pa.float64(), "Contribution of the feature to the raw margin.", nullable=False)
+        )
         fields.append(sfield("base_value", pa.float64(), "Model base (expected) raw-margin value.", nullable=False))
-        for f in meta.feature_names:
-            fields.append(
-                sfield(_contrib_name(f), pa.float64(), f"Contribution of {f} to the raw margin.", nullable=False)
-            )
         return BindResponse(output_schema=pa.schema(fields))
 
     @classmethod
     def _model(cls, params: ProcessParams[ExplainArgs]) -> tuple[Any, ModelMetadata]:
-        return _explain_model(_EXPLAIN_CACHE, params)
+        assert params.init_response is not None
+        key = params.init_response.execution_id
+        cached = _EXPLAIN_CACHE.get(key)
+        if cached is None:
+            cached = _resolve_model(params.args.model_name, params.args.model)
+            _EXPLAIN_CACHE[key] = cached
+        return cached
 
     @classmethod
     def process(
@@ -242,126 +258,45 @@ class ExplainModel(TableInOutGenerator[ExplainArgs]):
 
         booster = estimator.get_booster()
         dmat = xgboost.DMatrix(x, enable_categorical=True)
-        contribs = booster.predict(dmat, pred_contribs=True)  # (n_rows, n_features + 1); last col = base value
-
-        columns: dict[str, list[Any]] = {}
-        if a.id:
-            columns[a.id] = batch.column(a.id).to_pylist()
-        columns["base_value"] = [float(v) for v in contribs[:, -1]]
-        for j, f in enumerate(meta.feature_names):
-            columns[_contrib_name(f)] = [float(v) for v in contribs[:, j]]
-
-        out.emit(pa.RecordBatch.from_pydict(columns, schema=params.output_schema))
-
-
-# ===========================================================================
-# shap_values (per-row long format: one row per (input row, feature))
-# ===========================================================================
-
-
-@dataclass(slots=True, frozen=True)
-class ShapValuesArgs:
-    data: Annotated[TableInput, Arg(0, doc="Table to explain (must contain the model's feature columns).")]
-    model_name: Annotated[
-        str, Arg("model_name", default="", doc="Name of a model in the registry. Provide this OR model.")
-    ]
-    model: Annotated[bytes, Arg("model", default=b"", doc="A model BLOB. Provide this OR model_name.")]
-    id: Annotated[str, Arg("id", default="", doc="Optional id column to carry through onto every emitted row.")]
-
-
-_SHAP_CACHE: dict[bytes, tuple[Any, ModelMetadata]] = {}
-
-
-class ShapValues(TableInOutGenerator[ShapValuesArgs]):
-    FunctionArguments: ClassVar[type] = ShapValuesArgs
-
-    class Meta:
-        name = "shap_values"
-        description = "Per-row SHAP contributions in long format: one row per (input row, feature)"
-        categories = ["models", "interpretation", "inference"]
-        examples = [
-            FunctionExample(
-                sql=(
-                    "SELECT * FROM xgboost.shap_values((SELECT * FROM xgboost.diabetes()), "
-                    "model_name => 'diab_reg', id => 'sample_id') ORDER BY sample_id, feature LIMIT 5"
-                ),
-                description="Long-format SHAP values, one row per feature per sample",
-            )
-        ]
-
-    @classmethod
-    def on_bind(cls, params: BindParams[ShapValuesArgs]) -> BindResponse:
-        a = params.args
-        if not a.model_name and not a.model:
-            raise ValueError("shap_values requires either 'model_name' (a registry name) or 'model' (a model BLOB)")
-        input_schema = params.bind_call.input_schema
-        assert input_schema is not None
-        meta = _explain_meta(a)
-        if meta.task == CLASSIFICATION and meta.classes is not None and len(meta.classes) > 2:
-            raise ValueError(
-                f"shap_values supports regression and binary classification; this model has "
-                f"{len(meta.classes)} classes (multiclass contributions are not emitted)"
-            )
-        missing = [f for f in meta.feature_names if f not in input_schema.names]
-        if missing:
-            raise ValueError(
-                f"model requires feature column(s) {', '.join(missing)} not present in the input; "
-                f"model features: {', '.join(meta.feature_names)}"
-            )
-        fields: list[pa.Field] = []
-        if a.id:
-            fields.append(input_schema.field(a.id))
-        fields.append(sfield("feature", pa.string(), "Feature name.", nullable=False))
-        fields.append(
-            sfield("shap_value", pa.float64(), "This feature's contribution to the row's raw margin.", nullable=False)
-        )
-        fields.append(sfield("base_value", pa.float64(), "Model base (expected) raw-margin value.", nullable=False))
-        return BindResponse(output_schema=pa.schema(fields))
-
-    @classmethod
-    def _model(cls, params: ProcessParams[ShapValuesArgs]) -> tuple[Any, ModelMetadata]:
-        return _explain_model(_SHAP_CACHE, params)
-
-    @classmethod
-    def process(
-        cls,
-        params: ProcessParams[ShapValuesArgs],
-        state: None,
-        batch: pa.RecordBatch,
-        out: InOutCollector,
-    ) -> None:
-        a = params.args
-        estimator, meta = cls._model(params)
-        cat_mask = meta.categorical or [False] * len(meta.feature_names)
-        x = build_x_predict(pa.Table.from_batches([batch]), meta.feature_names, cat_mask, meta.categories)
-
-        booster = estimator.get_booster()
-        dmat = xgboost.DMatrix(x, enable_categorical=True)
-        contribs = booster.predict(dmat, pred_contribs=True)  # (n_rows, n_features + 1); last col = base value
+        contribs = np.asarray(booster.predict(dmat, pred_contribs=True))
 
         feats = meta.feature_names
+        n_feat = len(feats)
         n_rows = contribs.shape[0]
         ids = batch.column(a.id).to_pylist() if a.id else None
+        n_classes = len(meta.classes) if (meta.classes is not None) else 0
+        multiclass = meta.task == CLASSIFICATION and n_classes > 2
 
-        id_col: list[Any] = []
-        feat_col: list[str] = []
-        shap_col: list[float] = []
-        base_col: list[float] = []
+        # Regression / binary: contribs is (n_rows, n_feat+1), last col = base.
+        # Multiclass: XGBoost returns (n_rows, n_classes, n_feat+1).
+        id_out: list[Any] = []
+        class_out: list[int] = []
+        feature_out: list[str] = []
+        shap_out: list[float] = []
+        base_out: list[float] = []
+
+        n_blocks = n_classes if multiclass else 1
         for r in range(n_rows):
-            base = float(contribs[r, -1])
-            for j, f in enumerate(feats):
-                if ids is not None:
-                    id_col.append(ids[r])
-                feat_col.append(f)
-                shap_col.append(float(contribs[r, j]))
-                base_col.append(base)
+            for b in range(n_blocks):
+                row = contribs[r, b] if multiclass else contribs[r]
+                base = float(row[n_feat])
+                for j, fname in enumerate(feats):
+                    if ids is not None:
+                        id_out.append(ids[r])
+                    if multiclass:
+                        class_out.append(b)
+                    feature_out.append(fname)
+                    shap_out.append(float(row[j]))
+                    base_out.append(base)
 
         columns: dict[str, list[Any]] = {}
         if a.id:
-            columns[a.id] = id_col
-        columns["feature"] = feat_col
-        columns["shap_value"] = shap_col
-        columns["base_value"] = base_col
+            columns[a.id] = id_out
+        if multiclass:
+            columns["class"] = class_out
+        columns["feature"] = feature_out
+        columns["shap_value"] = shap_out
+        columns["base_value"] = base_out
         out.emit(pa.RecordBatch.from_pydict(columns, schema=params.output_schema))
 
 
@@ -388,6 +323,7 @@ _PERM_SCHEMA = pa.schema(
         sfield("feature", pa.string(), "Feature column name.", nullable=False),
         sfield("importance_mean", pa.float64(), "Mean drop in score when the feature is shuffled.", nullable=False),
         sfield("importance_std", pa.float64(), "Std-dev of the importance across repeats.", nullable=False),
+        sfield("rank", pa.int32(), "1-based rank by importance_mean (1 = most important).", nullable=False),
     ]
 )
 
@@ -399,6 +335,7 @@ class PermutationImportance(SinkBuffer[PermImportanceArgs, DrainState]):
         name = "permutation_importance"
         description = "Model-agnostic feature importance: the drop in score when each feature is shuffled"
         categories = ["models", "interpretation", "evaluation"]
+        tags = {"vgi.columns_md": columns_md(_PERM_SCHEMA)}
         examples = [
             FunctionExample(
                 sql=(
@@ -419,7 +356,7 @@ class PermutationImportance(SinkBuffer[PermImportanceArgs, DrainState]):
             raise ValueError("permutation_importance requires 'target' (the label column name)")
         input_schema = params.bind_call.input_schema
         assert input_schema is not None
-        meta = _explain_meta(a)
+        meta = _resolve_meta(a.model_name, a.model)
         missing = [f for f in meta.feature_names if f not in input_schema.names]
         if missing:
             raise ValueError(
@@ -451,7 +388,7 @@ class PermutationImportance(SinkBuffer[PermImportanceArgs, DrainState]):
 
         a = params.args
         input_schema = input_schema_of(params)
-        estimator, meta = get_store().load(a.model_name) if a.model_name else unpack_model(a.model)
+        estimator, meta = _resolve_model(a.model_name, a.model)
 
         table = cls.buffered_table(params, input_schema)
         if table is None or table.num_rows == 0:
@@ -459,19 +396,153 @@ class PermutationImportance(SinkBuffer[PermImportanceArgs, DrainState]):
 
         cat_mask = meta.categorical or [False] * len(meta.feature_names)
         x = build_x_predict(table, meta.feature_names, cat_mask, meta.categories)
-        y = np.asarray(table.column(a.target).to_numpy(zero_copy_only=False))
-        y = np.rint(y.astype(float)).astype(int) if meta.task == CLASSIFICATION else y.astype(float)
+        if meta.task == CLASSIFICATION:
+            # Score against the same label-encoded codes the estimator predicts,
+            # mapping the (possibly string) target labels through the stored classes.
+            code_of = {c: i for i, c in enumerate(meta.classes or [])}
+            raw = table.column(a.target).to_pylist()
+            y = np.asarray([code_of.get(v, -1) for v in raw], dtype=int)
+        else:
+            y = np.asarray(table.column(a.target).to_numpy(zero_copy_only=False)).astype(float)
 
         result = sk_permutation_importance(
             estimator, x, y, n_repeats=a.n_repeats, random_state=a.random_state, scoring=(a.scoring or None)
         )
+        rows = sorted(
+            zip(meta.feature_names, result.importances_mean, result.importances_std, strict=True),
+            key=lambda r: r[1],
+            reverse=True,
+        )
         out.emit(
             pa.RecordBatch.from_pydict(
                 {
-                    "feature": list(meta.feature_names),
-                    "importance_mean": [float(v) for v in result.importances_mean],
-                    "importance_std": [float(v) for v in result.importances_std],
+                    "feature": [name for name, _, _ in rows],
+                    "importance_mean": [float(m) for _, m, _ in rows],
+                    "importance_std": [float(s) for _, _, s in rows],
+                    "rank": [i + 1 for i in range(len(rows))],
                 },
+                schema=params.output_schema,
+            )
+        )
+
+
+# ===========================================================================
+# partial_dependence (how a model's prediction moves with one feature)
+# ===========================================================================
+
+
+@dataclass(slots=True, frozen=True)
+class PartialDependenceArgs:
+    data: Annotated[TableInput, Arg(0, doc="Background table (the model's feature columns).")]
+    model_name: Annotated[
+        str, Arg("model_name", default="", doc="Name of a model in the registry. Provide this OR model.")
+    ]
+    model: Annotated[bytes, Arg("model", default=b"", doc="A model BLOB. Provide this OR model_name.")]
+    feature: Annotated[str, Arg("feature", default="", doc="Numeric feature column to vary (required).")]
+    grid_resolution: Annotated[int, Arg("grid_resolution", default=100, doc="Number of grid points along the feature.")]
+
+
+_PD_SCHEMA = pa.schema(
+    [
+        sfield("feature_value", pa.float64(), "Value the feature was set to.", nullable=False),
+        sfield("class", pa.int64(), "Class index (NULL for regression / the single binary curve)."),
+        sfield("partial_dependence", pa.float64(), "Average model output at this feature value.", nullable=False),
+    ]
+)
+
+
+class PartialDependence(SinkBuffer[PartialDependenceArgs, DrainState]):
+    FunctionArguments: ClassVar[type] = PartialDependenceArgs
+
+    class Meta:
+        name = "partial_dependence"
+        description = "How a stored model's average prediction changes as one feature varies over a grid"
+        categories = ["models", "inspection"]
+        tags = {"vgi.columns_md": columns_md(_PD_SCHEMA)}
+        examples = [
+            FunctionExample(
+                sql=(
+                    "SELECT * FROM xgboost.partial_dependence((SELECT * FROM xgboost.iris()), "
+                    "model_name := 'iris_clf', feature := 'petal_length_cm') ORDER BY feature_value"
+                ),
+                description="Partial dependence of 'iris_clf' on petal length",
+            )
+        ]
+
+    @classmethod
+    def on_bind(cls, params: BindParams[PartialDependenceArgs]) -> BindResponse:
+        a = params.args
+        if not a.model_name and not a.model:
+            raise ValueError("partial_dependence requires either 'model_name' or 'model' (a model BLOB)")
+        if not a.feature:
+            raise ValueError("partial_dependence requires 'feature' (the column to vary)")
+        input_schema = params.bind_call.input_schema
+        assert input_schema is not None
+        meta = _resolve_meta(a.model_name, a.model)
+        if a.feature not in meta.feature_names:
+            raise ValueError(
+                f"feature {a.feature!r} is not one of the model's features: {', '.join(meta.feature_names)}"
+            )
+        idx = meta.feature_names.index(a.feature)
+        if (meta.categorical or [False] * len(meta.feature_names))[idx]:
+            raise ValueError(f"partial_dependence supports numeric features only; {a.feature!r} is categorical")
+        missing = [f for f in meta.feature_names if f not in input_schema.names]
+        if missing:
+            raise ValueError(f"model requires feature column(s) {', '.join(missing)} not present in the input")
+        return BindResponse(output_schema=_PD_SCHEMA)
+
+    @classmethod
+    def initial_finalize_state(
+        cls, finalize_state_id: bytes, params: TableBufferingParams[PartialDependenceArgs]
+    ) -> DrainState:
+        return DrainState()
+
+    @classmethod
+    def finalize(
+        cls,
+        params: TableBufferingParams[PartialDependenceArgs],
+        finalize_state_id: bytes,
+        state: DrainState,
+        out: BufferingOutputCollector,
+    ) -> None:
+        if state.done:
+            out.finish()
+            return
+        state.done = True
+
+        a = params.args
+        input_schema = input_schema_of(params)
+        estimator, meta = _resolve_model(a.model_name, a.model)
+
+        table = cls.buffered_table(params, input_schema)
+        if table is None or table.num_rows == 0:
+            raise ValueError("partial_dependence received no rows")
+
+        cat_mask = meta.categorical or [False] * len(meta.feature_names)
+        x = build_x_predict(table, meta.feature_names, cat_mask, meta.categories)
+        idx = meta.feature_names.index(a.feature)
+        result = sk_partial_dependence(estimator, x, [idx], grid_resolution=a.grid_resolution, kind="average")
+        grid = result["grid_values"][0]
+        averages = np.asarray(result["average"])  # shape (n_outputs, n_grid)
+
+        # Label each output's curve: regression -> NULL; binary -> the single
+        # curve (NULL); multiclass -> one curve per class index.
+        if meta.task == CLASSIFICATION and averages.shape[0] > 1:
+            labels: list[int | None] = list(range(averages.shape[0]))
+        else:
+            labels = [None] * averages.shape[0]
+
+        feature_value: list[float] = []
+        class_col: list[Any] = []
+        pd_col: list[float] = []
+        for o in range(averages.shape[0]):
+            for g in range(len(grid)):
+                feature_value.append(float(grid[g]))
+                class_col.append(labels[o])
+                pd_col.append(float(averages[o, g]))
+        out.emit(
+            pa.RecordBatch.from_pydict(
+                {"feature_value": feature_value, "class": class_col, "partial_dependence": pd_col},
                 schema=params.output_schema,
             )
         )
@@ -480,6 +551,6 @@ class PermutationImportance(SinkBuffer[PermImportanceArgs, DrainState]):
 IMPORTANCE_FUNCTIONS: list[type] = [
     FeatureImportance,
     ExplainModel,
-    ShapValues,
     PermutationImportance,
+    PartialDependence,
 ]

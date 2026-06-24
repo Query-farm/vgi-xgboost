@@ -117,6 +117,49 @@ FROM xgboost.predict((SELECT * EXCLUDE (target, target_name) FROM xgboost.breast
 ----
 true
 
+# ---- string / categorical classification labels round-trip ----
+
+statement ok
+CREATE TEMP VIEW iris_named AS
+  SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target_name
+  FROM xgboost.iris();
+
+statement ok
+SELECT * FROM xgboost.fit((SELECT * FROM iris_named), model_name => 'iris_str',
+                          estimator => 'xgb_classifier', target => 'target_name', id => 'sample_id');
+
+# prediction is a VARCHAR returning the original string labels
+query I
+SELECT typeof(prediction) FROM xgboost.predict((SELECT * FROM iris_x), model_name => 'iris_str', id => 'sample_id') LIMIT 1;
+----
+VARCHAR
+
+# in-sample accuracy is high and predictions are the original labels
+query I
+SELECT avg(CASE WHEN p.prediction = i.target_name THEN 1 ELSE 0 END) > 0.9
+FROM xgboost.predict((SELECT * FROM iris_x), model_name => 'iris_str', id => 'sample_id') p
+JOIN xgboost.iris() i USING (sample_id);
+----
+true
+
+# with_proba columns are named for the original labels (proba_setosa, ...)
+query I
+SELECT count(*) FROM (DESCRIBE
+  SELECT * FROM xgboost.predict((SELECT * FROM iris_x), model_name => 'iris_str', id => 'sample_id', with_proba => true))
+WHERE column_name IN ('proba_setosa', 'proba_versicolor', 'proba_virginica');
+----
+3
+
+statement ok
+SELECT * FROM xgboost.drop_model('iris_str');
+
+# ---- model_info reports int64 counts and a plain-string task ----
+
+query III
+SELECT typeof(n_samples), typeof(n_features), typeof(task) FROM xgboost.model_info('diab_reg');
+----
+BIGINT	BIGINT	VARCHAR
+
 # ---- drop_model removes it ----
 
 query II

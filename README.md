@@ -1,6 +1,12 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Query-farm/vgi-xgboost/main/assets/vgi-logo.png" alt="Vector Gateway Interface" height="104">
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="https://raw.githubusercontent.com/Query-farm/vgi-xgboost/main/assets/xgboost-logo.png" alt="XGBoost" height="56">
+</p>
+
 # vgi-xgboost
 
-[![CI](https://github.com/rustyconover/vgi-xgboost/actions/workflows/ci.yml/badge.svg)](https://github.com/rustyconover/vgi-xgboost/actions/workflows/ci.yml)
+[![CI](https://github.com/Query-farm/vgi-xgboost/actions/workflows/ci.yml/badge.svg)](https://github.com/Query-farm/vgi-xgboost/actions/workflows/ci.yml)
 
 A [VGI](https://github.com/query-farm/vgi-python) worker that brings
 [XGBoost](https://xgboost.readthedocs.io/) into DuckDB/SQL: train gradient-boosted
@@ -32,9 +38,10 @@ Each piece is mapped to the VGI primitive that fits its data flow:
 | **Typed fit** | `xgboost.fit_xgb_classifier((SELECT ...), n_estimators := 300, ...)` | table-buffering → registry + BLOB |
 | **Predict** | `xgboost.predict((SELECT ...), model_name := 'm')` | streaming table-in-out |
 | **Cross-val** | `xgboost.cross_val_predict` / `cross_val_score((SELECT ...), ...)` | table-buffering (no persistence) |
-| **Tuning** | `xgboost.grid_search` / `randomized_search((SELECT ...), grid := '...')` | table-buffering (CV leaderboard) |
+| **Tuning** | `xgboost.grid_search` / `randomized_search((SELECT ...), estimator := union_value(...))` | table-buffering (CV leaderboard) |
 | **Importance** | `xgboost.feature_importance('m')` / `permutation_importance(...)` | table function / buffering |
-| **Explain (SHAP)** | `xgboost.explain` / `shap_values((SELECT ...), model_name := 'm')` | streaming table-in-out |
+| **Explain (SHAP)** | `xgboost.explain((SELECT ...), model_name := 'm')` | streaming table-in-out |
+| **Inspect** | `xgboost.partial_dependence((SELECT ...), model_name := 'm', feature := 'x')` | table-buffering |
 
 **Conventions** for the fit / predict / explain functions:
 
@@ -44,9 +51,11 @@ Each piece is mapped to the VGI primitive that fits its data flow:
   copied unchanged onto each output row, so you can join results back to the
   source. It is optional.
 - **`target`** (required for `fit` / `cross_val_predict`) names the label column,
-  also excluded from features. Classification targets must be integer class
-  labels encoded `0..n_classes-1` (XGBoost's requirement); the bundled datasets
-  already are.
+  also excluded from features. Classification targets may be **any label dtype**
+  (string, int, …): they are label-encoded to integer codes for XGBoost, the
+  original ordered labels are stored in the model, and `predict` decodes back to
+  them (so a string target predicts string labels, and `with_proba` yields
+  `proba_<label>` columns).
 - **Every remaining column is a feature.** Numeric columns are used directly;
   **string columns become native categorical features** (no one-hot needed —
   this is XGBoost's edge), and **NULLs flow through as missing values**. Only
@@ -61,8 +70,8 @@ Each piece is mapped to the VGI primitive that fits its data flow:
 - **`fit` always returns the model as a `model` BLOB** (estimator + metadata,
   serialized with XGBoost's native format). It also persists to the registry
   *only if* `model_name` is given (so `model_name` is optional). `predict`,
-  `explain`, `shap_values`, and `permutation_importance` take **either**
-  `model_name :=` or `model :=` (a BLOB).
+  `explain`, `feature_importance`, `permutation_importance`, and
+  `partial_dependence` take **either** `model_name :=` or `model :=` (a BLOB).
 
 ## Function catalog
 
@@ -123,37 +132,65 @@ SELECT * FROM xgboost.fit_xgb_classifier(
 ### Hyperparameter search
 `grid_search` and `randomized_search` run cross-validated tuning and return the
 leaderboard (one row per combination) with the refit best model BLOB on the best
-row. The grid is a JSON object; grab the best model with `WHERE model IS NOT NULL`.
+(rank-1) row. The estimator and its grid are a single **tagged-union** argument:
+`union_value(<estimator> := {param: [values], ...})` — the union *tag* picks the
+estimator and each member exposes only that estimator's hyperparameters. Only the
+listed hyperparameters are searched; the rest stay at the estimator's defaults.
+Grab the best model with `WHERE model IS NOT NULL`.
 
 ```sql
 SELECT params, mean_test_score, rank
 FROM xgboost.grid_search((SELECT * FROM iris_xy),
-  estimator := 'xgb_classifier', target := 'target', id := 'sample_id',
-  grid := '{"n_estimators": [100, 300], "max_depth": [3, 5, 8]}')
+  target := 'target', id := 'sample_id',
+  estimator := union_value(xgb_classifier := {'n_estimators': [100, 300], 'max_depth': [3, 5, 8]}))
 ORDER BY rank;
 
 SELECT params, mean_test_score FROM xgboost.randomized_search((SELECT * FROM iris_xy),
-  estimator := 'xgb_classifier', target := 'target', n_iter := 10,
-  grid := '{"learning_rate": [0.05, 0.1, 0.2], "max_depth": [3, 5, 8]}');
+  target := 'target', n_iter := 10,
+  estimator := union_value(xgb_classifier := {'learning_rate': [0.05, 0.1, 0.2], 'max_depth': [3, 5, 8]}));
 ```
 
 ### Interpretation (XGBoost-specific)
-`feature_importance`, `explain`, `shap_values`, and `permutation_importance`.
+`feature_importance`, `explain`, `permutation_importance`, and
+`partial_dependence`.
 
 ```sql
 -- ranked per-feature importance for a stored model (weight/gain/cover/total_*)
 SELECT * FROM xgboost.feature_importance('iris_clf', importance_type := 'gain');
 
--- SHAP contributions, wide: base_value + one contrib_<feature> column per row.
--- base_value + sum(contrib_*) == the model's raw-margin prediction (regression / binary).
+-- SHAP contributions in LONG format: one row per (input row, [class], feature),
+-- with shap_value + base_value. base_value + sum(shap_value) reconstructs the
+-- model's raw-margin prediction; multiclass models add a `class` column.
 SELECT * FROM xgboost.explain((SELECT * FROM xgboost.diabetes()), model_name := 'diab_reg', id := 'sample_id');
 
--- SHAP contributions, long: one row per (input row, feature) — easy to pivot/aggregate.
-SELECT * FROM xgboost.shap_values((SELECT * FROM xgboost.diabetes()), model_name := 'diab_reg', id := 'sample_id');
-
--- model-agnostic importance: the drop in score when each feature is shuffled.
+-- model-agnostic importance, ranked: the drop in score when each feature is shuffled.
 SELECT * FROM xgboost.permutation_importance((SELECT * FROM xgboost.diabetes()),
-  model_name := 'diab_reg', target := 'target') ORDER BY importance_mean DESC;
+  model_name := 'diab_reg', target := 'target') ORDER BY rank;
+
+-- partial dependence: how the average prediction moves as one numeric feature
+-- varies over a grid (one curve per class for multiclass classifiers).
+SELECT * FROM xgboost.partial_dependence((SELECT * FROM xgboost.diabetes()),
+  model_name := 'diab_reg', feature := 'bmi') ORDER BY feature_value;
+```
+
+### Metrics by composition (with vgi-sklearn)
+The booster deliberately ships no metric functions: score its `predict` output
+with **vgi-sklearn's** metric aggregates instead of duplicating them. Attach both
+workers and join the predictions to the ground truth:
+
+```sql
+ATTACH 'sklearn' (TYPE vgi, LOCATION 'uv run sklearn_worker.py');
+ATTACH 'xgboost' (TYPE vgi, LOCATION 'uv run xgboost_worker.py');
+
+-- accuracy of an xgboost model, computed by sklearn.accuracy_score
+SELECT sklearn.accuracy_score(t.target, p.prediction)
+FROM xgboost.predict((SELECT * FROM test_x), model_name := 'iris_clf', id := 'sample_id') p
+JOIN test_labels t USING (sample_id);
+
+-- ROC AUC from per-class probabilities (with_proba := true)
+SELECT sklearn.roc_auc_score(t.target, p.proba_1)
+FROM xgboost.predict((SELECT * FROM test_x), model_name := 'churn', id := 'id', with_proba := true) p
+JOIN test_labels t USING (id);
 ```
 
 ### Native categorical + missing values
@@ -205,32 +242,3 @@ suite, and a Docker build + `/health` smoke test on every push and PR.
 Dependabot (`.github/dependabot.yml`) keeps the Python deps, GitHub Actions, and
 the Docker base image up to date weekly.
 
-## Deployment (Fly.io)
-
-`vgi-python` / `vgi-rpc` are on PyPI, so the Docker image installs everything
-directly — no vendoring step.
-
-```sh
-make deploy        # build, smoke-test, push, and deploy
-fly volumes create xgboost_models --size 1 --region iad   # one-time, for the registry
-```
-
-`serve.py` runs the worker over HTTP; attach the deployed endpoint with
-`ATTACH 'xgboost' (TYPE vgi, LOCATION 'https://<app>.fly.dev');`.
-
-## Layout
-
-```
-xgboost_worker.py      entry point; assembles the `xgboost` catalog
-serve.py               HTTP entry point (Fly.io)
-vgi_xgboost/
-  datasets.py          dataset table functions (bundled via scikit-learn)
-  models.py            fit / predict / cross_val_predict / cross_val_score / registry mgmt
-  typed_models.py      generated fit_<estimator> functions with typed hyperparams
-  search.py            grid_search / randomized_search (JSON grid)
-  features.py          native categorical + missing-value feature assembly
-  importance.py        feature_importance + SHAP explain/shap_values + permutation_importance
-  registry.py          ModelStore (local disk; S3/R2 seam) + native serialization + model BLOB
-  buffering.py         shared sink/combine helpers
-  schema_utils.py      Arrow schema helpers
-```

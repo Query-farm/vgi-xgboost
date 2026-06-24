@@ -54,9 +54,13 @@ def matrix(table: pa.Table, feature_names: list[str], *, what: str = "feature") 
             f"missing required {what} column(s): {', '.join(missing)}; "
             f"input has columns: {', '.join(table.schema.names)}"
         )
-    non_numeric = [n for n in feature_names if not pa.types.is_floating(table.schema.field(n).type)
-                   and not pa.types.is_integer(table.schema.field(n).type)
-                   and not pa.types.is_boolean(table.schema.field(n).type)]
+    non_numeric = [
+        n
+        for n in feature_names
+        if not pa.types.is_floating(table.schema.field(n).type)
+        and not pa.types.is_integer(table.schema.field(n).type)
+        and not pa.types.is_boolean(table.schema.field(n).type)
+    ]
     if non_numeric:
         raise ValueError(
             f"{what} column(s) must be numeric, but these are not: "

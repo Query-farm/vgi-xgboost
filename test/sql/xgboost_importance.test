@@ -1,5 +1,5 @@
 # name: test/sql/xgboost_importance.test
-# description: feature_importance + SHAP explain (XGBoost-specific extras)
+# description: feature_importance + SHAP explain + permutation/partial dependence
 # group: [vgi_xgboost]
 
 require-env VGI_XGBOOST_WORKER
@@ -39,51 +39,73 @@ SELECT count(*) FROM xgboost.feature_importance('diab_imp', importance_type => '
 ----
 10
 
-# ---- explain: id + base_value + one contribution column per feature ----
+# ---- feature_importance via a model BLOB (model := getvariable) ----
+
+statement ok
+SET VARIABLE diab_model = (SELECT model FROM xgboost.fit((SELECT * FROM xgboost.diabetes()),
+  estimator => 'xgb_regressor', target => 'target', id => 'sample_id'));
+
+query I
+SELECT count(*) FROM xgboost.feature_importance('', model := getvariable('diab_model'));
+----
+10
+
+# ---- explain: long format (id, feature, shap_value, base_value) for regression ----
 
 query I
 SELECT count(*) FROM (DESCRIBE
   SELECT * FROM xgboost.explain((SELECT * FROM diab_x), model_name => 'diab_imp', id => 'sample_id'));
 ----
-12
+4
+
+# one row per (sample, feature); 442 samples x 10 features
+query II
+SELECT count(*), count(DISTINCT feature)
+FROM xgboost.explain((SELECT * FROM diab_x), model_name => 'diab_imp', id => 'sample_id');
+----
+4420	10
 
 # SHAP additivity: base_value + sum(contributions) == the model's prediction
 query I
-SELECT bool_and(abs(
-    e.base_value + e.contrib_age + e.contrib_sex + e.contrib_bmi + e.contrib_bp
-    + e.contrib_s1 + e.contrib_s2 + e.contrib_s3 + e.contrib_s4 + e.contrib_s5 + e.contrib_s6
-    - p.prediction) < 1.0)
-FROM xgboost.explain((SELECT * FROM diab_x), model_name => 'diab_imp', id => 'sample_id') e
+SELECT bool_and(abs(e.base + e.contrib - p.prediction) < 1.0)
+FROM (SELECT sample_id, max(base_value) AS base, sum(shap_value) AS contrib
+      FROM xgboost.explain((SELECT * FROM diab_x), model_name => 'diab_imp', id => 'sample_id')
+      GROUP BY sample_id) e
 JOIN xgboost.predict((SELECT * FROM diab_x), model_name => 'diab_imp', id => 'sample_id') p
   USING (sample_id);
 ----
 true
 
-# ---- shap_values: long format, one row per (sample, feature) ----
+# ---- permutation_importance: ranked, one row per feature ----
 
 query II
-SELECT count(*), count(DISTINCT feature)
-FROM xgboost.shap_values((SELECT * FROM diab_x), model_name => 'diab_imp', id => 'sample_id');
+SELECT count(*), max(rank) FROM xgboost.permutation_importance((SELECT * FROM xgboost.diabetes()),
+  model_name => 'diab_imp', target => 'target', n_repeats => 3);
 ----
-4420	10
+10	10
 
-# the long-format SHAP value for a feature matches the wide explain contribution
+# rank 1 has the largest importance_mean (rank ascending <-> importance descending)
 query I
-SELECT bool_and(abs(s.shap_value - e.contrib_bmi) < 1e-5)
-FROM xgboost.shap_values((SELECT * FROM diab_x), model_name => 'diab_imp', id => 'sample_id') s
-JOIN xgboost.explain((SELECT * FROM diab_x), model_name => 'diab_imp', id => 'sample_id') e
-  USING (sample_id)
-WHERE s.feature = 'bmi';
+SELECT importance_mean = max(importance_mean) OVER () FROM xgboost.permutation_importance(
+  (SELECT * FROM xgboost.diabetes()), model_name => 'diab_imp', target => 'target', n_repeats => 3)
+WHERE rank = 1;
 ----
 true
 
-# ---- permutation_importance: one row per feature, drop in score when shuffled ----
+# ---- partial_dependence: a PD curve over a numeric feature ----
 
 query I
-SELECT count(*) FROM xgboost.permutation_importance((SELECT * FROM xgboost.diabetes()),
-  model_name => 'diab_imp', target => 'target', n_repeats => 3);
+SELECT count(*) FROM xgboost.partial_dependence((SELECT * FROM diab_x),
+  model_name => 'diab_imp', feature => 'bmi', grid_resolution => 20);
 ----
-10
+20
+
+# regression -> the class column is NULL
+query I
+SELECT bool_and(class IS NULL) FROM xgboost.partial_dependence((SELECT * FROM diab_x),
+  model_name => 'diab_imp', feature => 'bmi', grid_resolution => 20);
+----
+true
 
 # ---- cross_val_score: one held-out score per fold, no model stored ----
 
@@ -101,25 +123,71 @@ SELECT avg(score) > 0.8 FROM xgboost.cross_val_score(
 ----
 true
 
-# ---- explain rejects multiclass models with a clear error ----
+# ---- multiclass explain: a class column appears, one row per (sample, class, feature) ----
 
 statement ok
 SELECT * FROM xgboost.fit(
   (SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target FROM xgboost.iris()),
   model_name => 'iris_multi', estimator => 'xgb_classifier', target => 'target', id => 'sample_id');
 
-statement error
-SELECT * FROM xgboost.explain(
+# DESCRIBE shows the extra 'class' column (id, class, feature, shap_value, base_value)
+query I
+SELECT count(*) FROM (DESCRIBE SELECT * FROM xgboost.explain(
+  (SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm FROM xgboost.iris()),
+  model_name => 'iris_multi', id => 'sample_id'));
+----
+5
+
+# three classes -> three contribution blocks per sample
+query I
+SELECT count(DISTINCT class) FROM xgboost.explain(
   (SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm FROM xgboost.iris()),
   model_name => 'iris_multi', id => 'sample_id');
 ----
-binary classification
+3
+
+# SHAP + base reconstruct each class's raw margin
+query I
+SELECT bool_and(recon IS NOT NULL) FROM (
+  SELECT sample_id, class, max(base_value) + sum(shap_value) AS recon
+  FROM xgboost.explain(
+    (SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm FROM xgboost.iris()),
+    model_name => 'iris_multi', id => 'sample_id')
+  GROUP BY sample_id, class);
+----
+true
+
+# ---- multiclass partial_dependence: one curve per class ----
+
+query I
+SELECT count(DISTINCT class) FROM xgboost.partial_dependence(
+  (SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm FROM xgboost.iris()),
+  model_name => 'iris_multi', feature => 'petal_length_cm', grid_resolution => 10);
+----
+3
+
+# ---- partial_dependence rejects a categorical feature with a clear error ----
+
+statement ok
+SELECT * FROM xgboost.fit(
+  (SELECT sample_id, sepal_length_cm, petal_length_cm, target_name AS species, target FROM xgboost.iris()),
+  model_name => 'iris_cat', estimator => 'xgb_classifier', target => 'target', id => 'sample_id');
+
+statement error
+SELECT * FROM xgboost.partial_dependence(
+  (SELECT sample_id, sepal_length_cm, petal_length_cm, target_name AS species FROM xgboost.iris()),
+  model_name => 'iris_cat', feature => 'species');
+----
+numeric features only
 
 statement ok
 SELECT * FROM xgboost.drop_model('diab_imp');
 
 statement ok
 SELECT * FROM xgboost.drop_model('iris_multi');
+
+statement ok
+SELECT * FROM xgboost.drop_model('iris_cat');
 
 statement ok
 DETACH xgboost;

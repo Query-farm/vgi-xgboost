@@ -25,5 +25,5 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   integration suite over three transports (stdio, HTTP, in-process haybarn).
 - GitHub Actions CI and Dependabot (pip / actions / docker).
 
-[Unreleased]: https://github.com/rustyconover/vgi-xgboost/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/rustyconover/vgi-xgboost/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Query-farm/vgi-xgboost/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Query-farm/vgi-xgboost/releases/tag/v0.1.0

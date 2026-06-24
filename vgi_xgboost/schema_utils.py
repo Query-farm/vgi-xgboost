@@ -32,6 +32,58 @@ def field(
     )
 
 
+def _sql_type(t: pa.DataType) -> str:
+    """Map a common Arrow type to a readable DuckDB-ish type name."""
+    if pa.types.is_int64(t):
+        return "BIGINT"
+    if pa.types.is_int32(t):
+        return "INTEGER"
+    if pa.types.is_int16(t):
+        return "SMALLINT"
+    if pa.types.is_int8(t):
+        return "TINYINT"
+    if pa.types.is_float64(t):
+        return "DOUBLE"
+    if pa.types.is_float32(t):
+        return "FLOAT"
+    if pa.types.is_string(t):
+        return "VARCHAR"
+    if pa.types.is_boolean(t):
+        return "BOOLEAN"
+    if pa.types.is_binary(t):
+        return "BLOB"
+    if pa.types.is_list(t) or pa.types.is_large_list(t):
+        return f"{_sql_type(t.value_type)}[]"
+    return str(t)
+
+
+def columns_md(schema: pa.Schema, *, note: str | None = None) -> str:
+    """Render a Markdown table of a table function's RETURN columns for the
+    ``vgi.columns_md`` tag. DuckDB cannot expose a VGI table-function schema,
+    so this documents it. Reads each field's ``comment`` metadata."""
+    lines = ["| Column | Type | Description |", "| --- | --- | --- |"]
+    for f in schema:
+        desc = ""
+        if f.metadata and b"comment" in f.metadata:
+            desc = f.metadata[b"comment"].decode("utf-8")
+        lines.append(f"| `{f.name}` | {_sql_type(f.type)} | {desc} |")
+    md = "\n".join(lines)
+    if note:
+        md += f"\n\n{note}"
+    return md
+
+
+def columns_md_rows(rows: list[tuple[str, str, str]], *, note: str | None = None) -> str:
+    """Same Markdown table, from explicit (column, type, description) rows --
+    for functions whose output schema is computed dynamically at bind."""
+    lines = ["| Column | Type | Description |", "| --- | --- | --- |"]
+    lines += [f"| `{n}` | {t} | {d} |" for n, t, d in rows]
+    md = "\n".join(lines)
+    if note:
+        md += f"\n\n{note}"
+    return md
+
+
 _NON_IDENT = re.compile(r"[^0-9a-z]+")
 
 

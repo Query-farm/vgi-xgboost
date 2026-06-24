@@ -19,16 +19,16 @@ CREATE TEMP VIEW iris_xy AS
 # grid_search returns one row per combination (2 x 2 = 4)
 query I
 SELECT count(*) FROM xgboost.grid_search((SELECT * FROM iris_xy),
-  estimator := 'xgb_classifier', target := 'target', id := 'sample_id',
-  grid := '{"n_estimators": [30, 60], "max_depth": [2, 4]}');
+  target := 'target', id := 'sample_id',
+  estimator := union_value(xgb_classifier := {'n_estimators': [30, 60], 'max_depth': [2, 4]}));
 ----
 4
 
 # exactly one row (the best) carries the refit model BLOB
 query I
 SELECT count(*) FROM xgboost.grid_search((SELECT * FROM iris_xy),
-  estimator := 'xgb_classifier', target := 'target', id := 'sample_id',
-  grid := '{"n_estimators": [30, 60], "max_depth": [2, 4]}')
+  target := 'target', id := 'sample_id',
+  estimator := union_value(xgb_classifier := {'n_estimators': [30, 60], 'max_depth': [2, 4]}))
 WHERE model IS NOT NULL;
 ----
 1
@@ -36,16 +36,29 @@ WHERE model IS NOT NULL;
 # the best mean test score is high on iris
 query I
 SELECT max(mean_test_score) > 0.9 FROM xgboost.grid_search((SELECT * FROM iris_xy),
-  estimator := 'xgb_classifier', target := 'target', id := 'sample_id',
-  grid := '{"n_estimators": [30, 60], "max_depth": [2, 4]}');
+  target := 'target', id := 'sample_id',
+  estimator := union_value(xgb_classifier := {'n_estimators': [30, 60], 'max_depth': [2, 4]}));
 ----
 true
+
+# the rank-1 model BLOB predicts when fed back to predict()
+statement ok
+SET VARIABLE gs_model = (SELECT model FROM xgboost.grid_search((SELECT * FROM iris_xy),
+  target := 'target', id := 'sample_id',
+  estimator := union_value(xgb_classifier := {'n_estimators': [40, 80]})) WHERE model IS NOT NULL);
+
+query I
+SELECT count(*) FROM xgboost.predict(
+  (SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm FROM xgboost.iris()),
+  model := getvariable('gs_model'), id := 'sample_id');
+----
+150
 
 # grid_search can persist the best model to the registry
 statement ok
 SELECT 1 FROM xgboost.grid_search((SELECT * FROM iris_xy),
-  estimator := 'xgb_classifier', target := 'target', id := 'sample_id',
-  model_name := 'gs_best', grid := '{"n_estimators": [40, 80]}') WHERE model IS NOT NULL;
+  target := 'target', id := 'sample_id', model_name := 'gs_best',
+  estimator := union_value(xgb_classifier := {'n_estimators': [40, 80]})) WHERE model IS NOT NULL;
 
 query I
 SELECT count(*) FROM xgboost.model_info('gs_best');
@@ -55,24 +68,25 @@ SELECT count(*) FROM xgboost.model_info('gs_best');
 # randomized_search samples n_iter combinations (capped at the grid size)
 query I
 SELECT count(*) FROM xgboost.randomized_search((SELECT * FROM iris_xy),
-  estimator := 'xgb_classifier', target := 'target', id := 'sample_id', n_iter := 3,
-  grid := '{"n_estimators": [30, 60, 90], "max_depth": [2, 4, 6]}');
+  target := 'target', id := 'sample_id', n_iter := 3,
+  estimator := union_value(xgb_classifier := {'n_estimators': [30, 60, 90], 'max_depth': [2, 4, 6]}));
 ----
 3
 
 # n_iter beyond the grid size is clamped to the number of combinations (2)
 query I
 SELECT count(*) FROM xgboost.randomized_search((SELECT * FROM iris_xy),
-  estimator := 'xgb_classifier', target := 'target', id := 'sample_id', n_iter := 50,
-  grid := '{"n_estimators": [30, 60]}');
+  target := 'target', id := 'sample_id', n_iter := 50,
+  estimator := union_value(xgb_classifier := {'n_estimators': [30, 60]}));
 ----
 2
 
-# an unknown grid key is rejected at bind
+# a missing target is rejected at bind
 statement error
 SELECT * FROM xgboost.grid_search((SELECT * FROM iris_xy),
-  estimator := 'xgb_classifier', target := 'target', grid := '{"nonsense": [1, 2]}');
+  estimator := union_value(xgb_classifier := {'n_estimators': [30, 60]}));
 ----
+requires 'target'
 
 statement ok
 SELECT * FROM xgboost.drop_model('gs_best');
