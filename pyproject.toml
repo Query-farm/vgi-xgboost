@@ -37,3 +37,11 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 no_implicit_optional = true
 files = ["vgi_xgboost", "xgboost_worker.py", "serve.py"]
+
+[tool.vgi-lint-check.severity]
+# Illustrative per-function `vgi.example_queries` reference hypothetical tables or
+# a pre-fit model and cannot execute standalone; the curated catalog
+# `vgi.executable_examples` are the guaranteed-runnable set. Keep illustrative
+# example execution advisory rather than gating.
+VGI901 = "info"
+VGI902 = "info"

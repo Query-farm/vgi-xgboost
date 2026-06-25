@@ -83,6 +83,55 @@ _HPARAMS: dict[str, list[_HP]] = {
     "xgb_rf_regressor": _TREE_BOOSTER,
 }
 
+# Per-estimator prose for the typed fit_<estimator> functions: a one-line task
+# summary woven into the rich doc tags below so each generated function gets
+# distinct, estimator-specific documentation rather than a templated string.
+_ESTIMATOR_DOC: dict[str, tuple[str, str]] = {
+    "xgb_classifier": (
+        "gradient-boosted decision-tree **classifier** (XGBoost's `XGBClassifier`)",
+        "classification",
+    ),
+    "xgb_regressor": (
+        "gradient-boosted decision-tree **regressor** (XGBoost's `XGBRegressor`)",
+        "regression",
+    ),
+    "xgb_rf_classifier": (
+        "**random-forest classifier** built on XGBoost (`XGBRFClassifier`) — a single boosting round of bagged trees",
+        "classification",
+    ),
+    "xgb_rf_regressor": (
+        "**random-forest regressor** built on XGBoost (`XGBRFRegressor`) — a single boosting round of bagged trees",
+        "regression",
+    ),
+}
+
+
+def _typed_doc_tags(est_name: str) -> dict[str, str]:
+    """Build distinct, estimator-specific ``vgi.doc_llm`` / ``vgi.doc_md`` tags."""
+    blurb, task = _ESTIMATOR_DOC[est_name]
+    doc_llm = (
+        f"Buffers a training table and fits a {blurb} with its key hyperparameters exposed as typed, "
+        f"named SQL arguments (`n_estimators`, `max_depth`, `learning_rate`, `subsample`, "
+        f"`colsample_bytree`, `min_child_weight`, `gamma`, `reg_alpha`, `reg_lambda`, ...), each "
+        f"defaulting to XGBoost's own documented default. Equivalent to "
+        f"`fit(estimator := '{est_name}', ...)` but discoverable and type-checked in the catalog instead "
+        f"of a JSON `params` blob. Name the {task} label with `target :=`, optionally carry an `id :=` "
+        f"through; every other column is a feature (strings/missing values handled natively). Returns the "
+        f"same one-row summary with a reusable `model` BLOB, and persists to the registry when "
+        f"`model_name :=` is given. Feed the BLOB to `predict`/`explain`/`feature_importance`."
+    )
+    doc_md = (
+        f"**`fit_{est_name}`** — fit a {blurb} with typed hyperparameters.\n\n"
+        f"- Input: a training table `(SELECT ...)`; name the label with `target :=`, optional `id :=` "
+        f"passthrough\n"
+        f"- Hyperparameters are named, typed SQL args (`n_estimators`, `max_depth`, `learning_rate`, "
+        f"`subsample`, `reg_lambda`, ...) at XGBoost's real defaults\n"
+        f"- Returns the standard fit summary plus a reusable `model` BLOB; `model_name :=` also persists "
+        f"it\n\n"
+        f"The discoverable, type-checked alternative to `fit(estimator := '{est_name}', ...)`."
+    )
+    return {"vgi.result_columns_md": _FIT_COLUMNS_MD, "vgi.doc_llm": doc_llm, "vgi.doc_md": doc_md}
+
 
 def _estimator_kwargs(spec: list[_HP], args: Any) -> dict[str, Any]:
     """Translate the typed SQL args into XGBoost estimator kwargs, dropping sentinels."""
@@ -179,7 +228,7 @@ def _make_fit_function(est_name: str) -> type:
             "name": fn_name,
             "description": f"Fit a {est_name} with typed hyperparameters; returns/stores the model",
             "categories": ["models", "supervised", "typed"],
-            "tags": {"vgi.columns_md": _FIT_COLUMNS_MD},
+            "tags": _typed_doc_tags(est_name),
             "examples": [
                 FunctionExample(
                     sql=(

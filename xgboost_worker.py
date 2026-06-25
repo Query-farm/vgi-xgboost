@@ -25,12 +25,13 @@ Usage:
 from __future__ import annotations
 
 import dataclasses
+import json
 import logging
 import os
 from typing import Any
 
 from vgi import Worker
-from vgi.catalog import Catalog, ReadOnlyCatalogInterface, Schema
+from vgi.catalog import Catalog, ReadOnlyCatalogInterface, Schema, Table
 from vgi.catalog.catalog_interface import CatalogAttachResult, CatalogInfo
 
 from vgi_xgboost import __version__
@@ -100,15 +101,359 @@ _SCHEMA_DESCRIPTION_MD = (
     "permutation importance\n\n"
     "Fit returns a reusable model BLOB; predict aligns features by name."
 )
+# Guaranteed-runnable, self-contained examples advertised on the catalog
+# (VGI509): each is fully schema-qualified and executes as written against a
+# freshly attached worker. Multi-statement examples run in order in one session,
+# so a model can be fit, stashed in a session variable (the model BLOB can't ride
+# a table function's single subquery slot), and then used by predict. Kept fast
+# (small/default params, cv := 3) so each runs in well under ~30s.
+_CATALOG_EXECUTABLE_EXAMPLES = json.dumps(
+    [
+        {
+            "description": "Load the built-in iris dataset.",
+            "sql": "SELECT * FROM xgboost.main.iris LIMIT 5",
+        },
+        {
+            "description": "Fit an XGBoost classifier on iris, then predict with the fitted model.",
+            "sql": [
+                (
+                    "SET VARIABLE iris_model = ("
+                    "SELECT model FROM xgboost.main.fit((SELECT * FROM xgboost.main.iris), "
+                    "estimator := 'xgb_classifier', target := 'target', id := 'sample_id'))"
+                ),
+                (
+                    "SELECT sample_id, prediction "
+                    "FROM xgboost.main.predict((SELECT * FROM xgboost.main.iris), "
+                    "model := getvariable('iris_model'), id := 'sample_id') LIMIT 5"
+                ),
+            ],
+        },
+        {
+            "description": "Three-fold cross-validated accuracy of an XGBoost classifier on iris.",
+            "sql": (
+                "SELECT fold, score FROM xgboost.main.cross_val_score("
+                "(SELECT * EXCLUDE (target_name) FROM xgboost.main.iris), "
+                "estimator := 'xgb_classifier', target := 'target', cv := 3)"
+            ),
+        },
+        {
+            "description": "Grid-search an XGBoost classifier on iris over a tiny grid (3-fold).",
+            "sql": (
+                "SELECT params, mean_test_score, rank FROM xgboost.main.grid_search("
+                "(SELECT * EXCLUDE (target_name) FROM xgboost.main.iris), "
+                "target := 'target', cv := 3, "
+                "estimator := union_value(xgb_classifier := {'n_estimators': [25, 50], 'max_depth': [3]})) "
+                "ORDER BY rank"
+            ),
+        },
+    ]
+)
 _CATALOG_TAGS = {
-    "vgi.description_llm": _CATALOG_DESCRIPTION_LLM,
-    "vgi.description_md": _CATALOG_DESCRIPTION_MD,
+    "vgi.doc_llm": _CATALOG_DESCRIPTION_LLM,
+    "vgi.doc_md": _CATALOG_DESCRIPTION_MD,
     "vgi.author": "Query Farm <hello@query.farm>",
     "vgi.copyright": "Copyright 2026 Query Farm LLC - https://query.farm",
     "vgi.license": "MIT",
     "vgi.support_contact": f"{SOURCE_URL}/issues",
     "vgi.support_policy_url": f"{SOURCE_URL}/blob/main/SUPPORT.md",
+    "vgi.title": "XGBoost for SQL",
+    "vgi.keywords": json.dumps(
+        [
+            "xgboost",
+            "gradient boosting",
+            "machine learning",
+            "models",
+            "classification",
+            "regression",
+            "cross-validation",
+            "hyperparameter search",
+            "feature importance",
+            "shap",
+        ]
+    ),
+    "vgi.executable_examples": _CATALOG_EXECUTABLE_EXAMPLES,
 }
+
+# Per-schema metadata for the single `main` schema (VGI506/124/126): title,
+# keywords (JSON array), and a runnable, schema-qualified example query.
+_SCHEMA_TAGS = {
+    "provider": "XGBoost",
+    "domain": "machine-learning",
+    "vgi.title": "XGBoost",
+    "vgi.doc_llm": _SCHEMA_DESCRIPTION_LLM,
+    "vgi.doc_md": _SCHEMA_DESCRIPTION_MD,
+    "vgi.keywords": json.dumps(
+        [
+            "xgboost",
+            "gradient boosting",
+            "models",
+            "datasets",
+            "interpretation",
+            "cross-validation",
+        ]
+    ),
+    "vgi.example_queries": json.dumps(
+        [
+            {
+                "description": "Fit an XGBoost classifier on iris and return the training summary",
+                "sql": (
+                    "SELECT estimator, task, n_samples, n_features, train_score "
+                    "FROM xgboost.main.fit((SELECT * FROM xgboost.main.iris), "
+                    "estimator := 'xgb_classifier', target := 'target', id := 'sample_id')"
+                ),
+            }
+        ]
+    ),
+}
+
+
+def _humanize(name: str) -> str:
+    """Title-case a snake_case function name for a display title."""
+    return name.replace("_", " ").title()
+
+
+def _apply_discovery_tags(functions: list[type]) -> None:
+    """Inject the per-function discovery tags the catalog-quality linter expects.
+
+    ``vgi.title`` and ``vgi.keywords`` (a JSON array of strings) are derived
+    mechanically from each function's existing Meta (display name, categories).
+    ``vgi.source_url`` is deliberately NOT set here — it is a catalog-only tag
+    (VGI139). The richer ``vgi.doc_llm`` / ``vgi.doc_md`` tags are authored per
+    function in the implementation modules and are left untouched here.
+    """
+    for fn in functions:
+        meta = getattr(fn, "Meta", None)
+        if meta is None:
+            continue
+        name = getattr(meta, "name", fn.__name__)
+        cats = list(getattr(meta, "categories", []) or [])
+        tags = dict(getattr(meta, "tags", {}) or {})
+        tags.setdefault("vgi.title", _humanize(name))
+        keywords = list(dict.fromkeys(cats or name.split("_")))
+        tags.setdefault("vgi.keywords", json.dumps(keywords))
+        meta.tags = tags
+
+
+_apply_discovery_tags(_FUNCTIONS)
+
+
+def _is_parameterless_table_fn(fn: type) -> bool:
+    """True for a table function whose argument dataclass has no fields.
+
+    Such a function always returns the same rows, so it is also exposed as a
+    plain table (VGI311) — ``SELECT * FROM schema.name`` without parentheses.
+    """
+    args = getattr(fn, "FunctionArguments", None)
+    return args is not None and dataclasses.is_dataclass(args) and not dataclasses.fields(args)
+
+
+# Table-specific metadata for the parameterless functions also exposed as tables
+# (VGI311). Each carries a table-oriented description, a descriptive title (not a
+# restatement of the name), a primary key, and a runnable example — distinct from
+# the backing function's documentation.
+_TABLE_META: dict[str, dict[str, Any]] = {
+    "iris": {
+        "title": "Fisher's iris flowers",
+        "comment": "150 iris flowers with four sepal/petal measurements (cm) and their species.",
+        "keywords": json.dumps(["iris", "flowers", "classification", "toy dataset", "fisher"]),
+        "primary_key": (("sample_id",),),
+        "doc_llm": (
+            "Fisher's classic iris table: 150 rows, one per flower. Columns are `sample_id`, four numeric "
+            "measurements in centimetres (`sepal_length_cm`, `sepal_width_cm`, `petal_length_cm`, "
+            "`petal_width_cm`), an integer `target` (0/1/2), and the `target_name` species "
+            "(setosa/versicolor/virginica). Query it directly — `SELECT * FROM xgboost.main.iris` — for a "
+            "balanced 3-class toy dataset to feed `fit`/`predict`."
+        ),
+        "doc_md": (
+            "### `iris` table\n\n"
+            "150 iris flowers, evenly split across three species:\n\n"
+            "- `sample_id` — row id\n"
+            "- four measurements in **cm** — `sepal_length_cm`, `sepal_width_cm`, `petal_length_cm`, "
+            "`petal_width_cm`\n"
+            "- `target` (0–2) and `target_name` (species)"
+        ),
+        "example_queries": json.dumps(
+            [
+                {
+                    "description": "Row count per species",
+                    "sql": "SELECT target_name, count(*) FROM xgboost.main.iris GROUP BY target_name",
+                }
+            ]
+        ),
+    },
+    "wine": {
+        "title": "Wine cultivar chemistry",
+        "comment": "178 wines with 13 chemical measurements and their cultivar of origin.",
+        "keywords": json.dumps(["wine", "chemistry", "classification", "toy dataset", "cultivars"]),
+        "primary_key": (("sample_id",),),
+        "doc_llm": (
+            "The wine-recognition table: 178 rows, one per wine sample, with 13 numeric chemical-analysis "
+            "features (alcohol, malic acid, ash, magnesium, total phenols, flavanoids, colour intensity, "
+            "hue, proline, ...), an integer `target`, and the cultivar `target_name`. A 3-class dataset "
+            "for classification over continuous features."
+        ),
+        "doc_md": (
+            "### `wine` table\n\n"
+            "178 wines from three cultivars:\n\n"
+            "- `sample_id` — row id\n"
+            "- 13 chemical features (alcohol, phenols, colour intensity, proline, ...)\n"
+            "- `target` (0–2) and `target_name` (cultivar)"
+        ),
+        "example_queries": json.dumps(
+            [
+                {
+                    "description": "Average alcohol per cultivar",
+                    "sql": "SELECT target_name, round(avg(alcohol), 2) FROM xgboost.main.wine GROUP BY target_name",
+                }
+            ]
+        ),
+    },
+    "breast_cancer": {
+        "title": "Breast-cancer cell diagnostics",
+        "comment": "569 tumour samples with 30 cell-nucleus measurements and a benign/malignant label.",
+        "keywords": json.dumps(["breast cancer", "diagnostics", "classification", "toy dataset", "binary"]),
+        "primary_key": (("sample_id",),),
+        "doc_llm": (
+            "The Wisconsin breast-cancer table: 569 rows, one per tumour, with 30 numeric features "
+            "summarising cell-nucleus geometry (mean/standard-error/worst of radius, texture, area, "
+            "concavity, ...), a binary `target` (0 = malignant, 1 = benign), and `target_name`. A standard "
+            "binary-classification benchmark."
+        ),
+        "doc_md": (
+            "### `breast_cancer` table\n\n"
+            "569 tumour samples, binary outcome:\n\n"
+            "- `sample_id` — row id\n"
+            "- 30 cell-nucleus features (mean / SE / worst of radius, texture, area, ...)\n"
+            "- `target` (0 malignant, 1 benign) and `target_name`"
+        ),
+        "example_queries": json.dumps(
+            [
+                {
+                    "description": "Class balance",
+                    "sql": "SELECT target_name, count(*) FROM xgboost.main.breast_cancer GROUP BY target_name",
+                }
+            ]
+        ),
+    },
+    "diabetes": {
+        "title": "Diabetes progression",
+        "comment": "442 patients with 10 baseline measurements and a one-year disease-progression score.",
+        "keywords": json.dumps(["diabetes", "regression", "health", "toy dataset", "progression"]),
+        "primary_key": (("sample_id",),),
+        "doc_llm": (
+            "Diabetes table: 442 rows, one per patient, with 10 mean-centred, scaled baseline features "
+            "(`age`, `sex`, `bmi`, blood pressure `bp`, and six serum measurements `s1`..`s6`) and a "
+            "continuous `target` quantifying disease progression one year after baseline. A small "
+            "regression dataset — handy for `explain` and `partial_dependence`."
+        ),
+        "doc_md": (
+            "### `diabetes` table\n\n"
+            "442 patients (regression):\n\n"
+            "- `sample_id` — row id\n"
+            "- 10 scaled baseline features (`age`, `sex`, `bmi`, `bp`, `s1`–`s6`)\n"
+            "- `target` — one-year disease-progression score"
+        ),
+        "example_queries": json.dumps(
+            [
+                {
+                    "description": "Target range",
+                    "sql": "SELECT min(target), max(target), round(avg(target), 1) FROM xgboost.main.diabetes",
+                }
+            ]
+        ),
+    },
+    "california_housing": {
+        "title": "California housing prices",
+        "comment": "20640 census block groups with 8 features and the median house value (regression).",
+        "keywords": json.dumps(["california housing", "regression", "prices", "toy dataset", "census"]),
+        "primary_key": (("sample_id",),),
+        "doc_llm": (
+            "California-housing table: 20,640 rows, one per 1990 census block group, with 8 numeric "
+            "features (`medinc` median income, `houseage`, average rooms/bedrooms, population, occupancy, "
+            "latitude, longitude) and a continuous `target` — the median house value in $100,000s. A large "
+            "regression dataset; downloaded from scikit-learn on first use."
+        ),
+        "doc_md": (
+            "### `california_housing` table\n\n"
+            "20,640 census block groups (regression):\n\n"
+            "- `sample_id` — row id\n"
+            "- 8 features (`medinc`, `houseage`, `averooms`, `latitude`, `longitude`, ...)\n"
+            "- `target` — median house value (in $100k)"
+        ),
+        "example_queries": json.dumps(
+            [
+                {
+                    "description": "Average value by latitude band",
+                    "sql": (
+                        "SELECT round(latitude) AS lat, round(avg(target), 2) "
+                        "FROM xgboost.main.california_housing GROUP BY lat ORDER BY lat"
+                    ),
+                }
+            ]
+        ),
+    },
+    "list_models": {
+        "title": "Saved model registry",
+        "comment": "One row per model persisted in the registry, with its estimator, task, shape, and score.",
+        "keywords": json.dumps(["model registry", "models", "metadata", "catalog", "persistence"]),
+        "primary_key": (("model_name",),),
+        "doc_llm": (
+            "A table of every model saved to the registry (by `fit`/`fit_<estimator>`/search with a "
+            "`model_name`). One row per model keyed by `model_name`, with its `estimator`, `task`, "
+            "`target`, training shape (`n_features`/`n_samples`/`n_classes`), `train_score`, "
+            "`xgboost_version`, `created_at`, and the `features` list. Query it to discover what is "
+            "available to `predict`/`explain`/`feature_importance`."
+        ),
+        "doc_md": (
+            "### `list_models` table\n\n"
+            "Every model in the registry, one row each:\n\n"
+            "- `model_name` (key), `estimator`, `task`, `target`\n"
+            "- `n_features` / `n_samples` / `n_classes`, `train_score`\n"
+            "- `xgboost_version`, `created_at`, `features`"
+        ),
+        "example_queries": json.dumps(
+            [
+                {
+                    "description": "How many models are saved",
+                    "sql": "SELECT count(*) AS model_count FROM xgboost.main.list_models",
+                }
+            ]
+        ),
+    },
+}
+
+
+def _function_table(fn: type) -> Table:
+    """Expose a parameterless table function as a same-named table (VGI311).
+
+    The table carries its own table-oriented metadata from ``_TABLE_META`` — a
+    description, descriptive title, primary key, and example — distinct from the
+    backing function's documentation.
+    """
+    meta = getattr(fn, "Meta")  # noqa: B009 - Meta is a dynamic per-function class
+    tm = _TABLE_META[meta.name]
+    primary_key = tm["primary_key"]
+    # The key columns are inherently non-null (VGI804).
+    not_null = tuple(dict.fromkeys(col for cols in primary_key for col in cols))
+    return Table(
+        name=meta.name,
+        function=fn,
+        comment=tm["comment"],
+        primary_key=primary_key,
+        not_null=not_null,
+        tags={
+            "provider": "XGBoost",
+            "domain": "machine-learning",
+            "vgi.title": tm["title"],
+            "vgi.keywords": tm["keywords"],
+            "vgi.doc_llm": tm["doc_llm"],
+            "vgi.doc_md": tm["doc_md"],
+            "vgi.example_queries": tm["example_queries"],
+        },
+    )
+
+
+_TABLES = [_function_table(fn) for fn in _FUNCTIONS if _is_parameterless_table_fn(fn)]
 
 _XGBOOST_CATALOG = Catalog(
     name="xgboost",
@@ -119,12 +464,8 @@ _XGBOOST_CATALOG = Catalog(
         Schema(
             name="main",
             comment="XGBoost train/predict model registry, datasets, and interpretation for SQL",
-            tags={
-                "provider": "XGBoost",
-                "domain": "machine-learning",
-                "vgi.description_llm": _SCHEMA_DESCRIPTION_LLM,
-                "vgi.description_md": _SCHEMA_DESCRIPTION_MD,
-            },
+            tags=_SCHEMA_TAGS,
+            tables=_TABLES,
             functions=list(_FUNCTIONS),
         ),
     ],

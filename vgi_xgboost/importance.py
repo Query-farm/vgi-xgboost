@@ -107,7 +107,26 @@ class FeatureImportance(TableFunctionGenerator[FeatureImportanceArgs]):
         name = "feature_importance"
         description = "Per-feature importance (weight/gain/cover) for a stored model, ranked"
         categories = ["models", "interpretation"]
-        tags = {"vgi.columns_md": columns_md(_IMPORTANCE_SCHEMA)}
+        tags = {
+            "vgi.result_columns_md": columns_md(_IMPORTANCE_SCHEMA),
+            "vgi.doc_llm": (
+                "Returns the booster's built-in per-feature importance for a stored model, one ranked row "
+                "per feature (`feature`, `importance`, `rank`; rank 1 = most important, already sorted "
+                "descending). Identify the model positionally by name (`feature_importance('m')`) or with "
+                "`model :=` (a BLOB). Choose the `importance_type :=` — `gain` (default; average loss "
+                "reduction), `weight` (split count), `cover`, `total_gain`, or `total_cover`. Features "
+                "never used in a split report importance 0. A fast, model-native ranking; for a "
+                "model-agnostic alternative use `permutation_importance`."
+            ),
+            "vgi.doc_md": (
+                "**Booster feature importance** — model-native, ranked.\n\n"
+                "- Identify the model by name (`feature_importance('m')`) or `model :=` BLOB\n"
+                "- `importance_type :=` `gain` (default) | `weight` | `cover` | `total_gain` | "
+                "`total_cover`\n"
+                "- Returns `(feature, importance, rank)`, sorted by importance descending\n\n"
+                "Unused features score 0. See `permutation_importance` for a model-agnostic measure."
+            ),
+        }
         examples = [
             FunctionExample(
                 sql="SELECT * FROM xgboost.feature_importance('iris_clf', importance_type => 'gain')",
@@ -180,7 +199,7 @@ class ExplainModel(TableInOutGenerator[ExplainArgs]):
         description = "Per-row SHAP feature contributions, long format (row, [class], feature, shap_value, base_value)"
         categories = ["models", "interpretation", "inference"]
         tags = {
-            "vgi.columns_md": columns_md_rows(
+            "vgi.result_columns_md": columns_md_rows(
                 [
                     ("feature", "VARCHAR", "Feature column name."),
                     ("shap_value", "DOUBLE", "Contribution of the feature to the raw margin."),
@@ -191,7 +210,24 @@ class ExplainModel(TableInOutGenerator[ExplainArgs]):
                     "through as the first column. For multiclass models a `class` BIGINT column is added "
                     "(one row per (input row, class, feature))."
                 ),
-            )
+            ),
+            "vgi.doc_llm": (
+                "Streams a table through a stored model and emits SHAP-style per-row prediction "
+                "contributions (XGBoost's `pred_contribs`) in long format: one row per (input row, "
+                "feature) with `feature`, `shap_value` (how much that feature pushed this row's raw margin "
+                "away from the model's base), and `base_value` (the expected margin). Identify the model "
+                "with `model_name :=` or `model :=` (a BLOB); name an `id :=` to tag every emitted row. "
+                "For multiclass models an extra `class` column appears (one row per (row, class, "
+                "feature)). Sum `shap_value` over a row's features and add `base_value` to recover the raw "
+                "margin. Use it for local, per-prediction explanations."
+            ),
+            "vgi.doc_md": (
+                "**SHAP explanations** — per-row feature contributions, long format.\n\n"
+                "- Identify the model with `model_name :=` or `model :=`; optional `id :=` passthrough\n"
+                "- One row per (input row, feature): `feature`, `shap_value`, `base_value`\n"
+                "- Multiclass adds a `class` BIGINT column (one row per (row, class, feature))\n\n"
+                "`sum(shap_value) + base_value` = the row's raw margin. Local, per-prediction explanation."
+            ),
         }
         examples = [
             FunctionExample(
@@ -335,7 +371,26 @@ class PermutationImportance(SinkBuffer[PermImportanceArgs, DrainState]):
         name = "permutation_importance"
         description = "Model-agnostic feature importance: the drop in score when each feature is shuffled"
         categories = ["models", "interpretation", "evaluation"]
-        tags = {"vgi.columns_md": columns_md(_PERM_SCHEMA)}
+        tags = {
+            "vgi.result_columns_md": columns_md(_PERM_SCHEMA),
+            "vgi.doc_llm": (
+                "Computes model-agnostic permutation importance over an evaluation table: for each "
+                "feature, shuffle its values `n_repeats :=` times and measure the resulting drop in the "
+                "model's score; a larger drop means a more important feature. Returns one ranked row per "
+                "feature (`feature`, `importance_mean`, `importance_std`, `rank`; rank 1 = most "
+                "important). Identify the model with `model_name :=` or `model :=`, name the held-out "
+                "`target :=` column, and optionally set `scoring :=` and `random_state :=`. Unlike "
+                "`feature_importance` this measures impact on real predictions and respects feature "
+                "correlations, but it needs labelled data and is slower."
+            ),
+            "vgi.doc_md": (
+                "**Permutation importance** — model-agnostic, ranked.\n\n"
+                "- Identify the model with `model_name :=` or `model :=`; name the `target :=` column\n"
+                "- `n_repeats :=` shuffles per feature, optional `scoring :=`, `random_state :=`\n"
+                "- Returns `(feature, importance_mean, importance_std, rank)`, sorted descending\n\n"
+                "Measures impact on real predictions (needs labels; slower than `feature_importance`)."
+            ),
+        }
         examples = [
             FunctionExample(
                 sql=(
@@ -458,7 +513,26 @@ class PartialDependence(SinkBuffer[PartialDependenceArgs, DrainState]):
         name = "partial_dependence"
         description = "How a stored model's average prediction changes as one feature varies over a grid"
         categories = ["models", "inspection"]
-        tags = {"vgi.columns_md": columns_md(_PD_SCHEMA)}
+        tags = {
+            "vgi.result_columns_md": columns_md(_PD_SCHEMA),
+            "vgi.doc_llm": (
+                "Computes the partial-dependence curve for one numeric feature: sweeps `feature :=` over a "
+                "grid of `grid_resolution :=` points and reports the model's average prediction at each "
+                "value, holding the rest of the buffered background table fixed. Returns `(feature_value, "
+                "class, partial_dependence)` ordered along the grid; `class` is NULL for regression and "
+                "the single binary curve, and is the class index (one curve per class) for multiclass. "
+                "Identify the model with `model_name :=` or `model :=`. Numeric features only "
+                "(categorical features raise a clear error). Use it to see the marginal effect and shape "
+                "of a feature on the prediction."
+            ),
+            "vgi.doc_md": (
+                "**Partial dependence** — marginal effect of one feature.\n\n"
+                "- `feature :=` (numeric only) swept over `grid_resolution :=` points\n"
+                "- Identify the model with `model_name :=` or `model :=`; input is the background table\n"
+                "- Returns `(feature_value, class, partial_dependence)` along the grid\n\n"
+                "`class` is NULL for regression/binary, the class index for multiclass (one curve each)."
+            ),
+        }
         examples = [
             FunctionExample(
                 sql=(
