@@ -146,7 +146,7 @@ def _estimator_kwargs(spec: list[_HP], args: Any) -> dict[str, Any]:
 
 def _make_args_class(est_name: str, spec: list[_HP]) -> type:
     fields: list[Any] = [
-        ("data", Annotated[TableInput, Arg(0, doc="Training table (features + target [+ id]).")]),
+        ("data", Annotated[TableInput, Arg(0, doc="Training rows: features + target [+ id].")]),
         (
             "model_name",
             Annotated[

@@ -9,7 +9,7 @@ description = "A VGI worker exposing XGBoost (train/predict registry + interpret
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "vgi-python[http,oauth]>=0.8.3",
+    "vgi-python[http,oauth]>=0.8.5",
     "vgi-rpc[sentry]>=0.20.4",
     "xgboost>=2.0",
     "scikit-learn>=1.5",
@@ -38,10 +38,15 @@ warn_unused_ignores = true
 no_implicit_optional = true
 files = ["vgi_xgboost", "xgboost_worker.py", "serve.py"]
 
-[tool.vgi-lint-check.severity]
-# Illustrative per-function `vgi.example_queries` reference hypothetical tables or
-# a pre-fit model and cannot execute standalone; the curated catalog
-# `vgi.executable_examples` are the guaranteed-runnable set. Keep illustrative
-# example execution advisory rather than gating.
-VGI901 = "info"
-VGI902 = "info"
+[tool.vgi-lint-check.per_object]
+# VGI901/902 (--execute only) run each example's SQL live. These functions read a
+# *stored* model at bind time, so their single-statement illustrative examples
+# cannot bind in a fresh session (no model exists yet) — the fit->predict workflow
+# is demonstrated in the catalog's vgi.executable_examples instead. This is a
+# surgical, documented exception scoped to exactly the model-dependent functions;
+# every other example binds and runs on real/inline data.
+"xgboost.main.predict" = { ignore = ["VGI901", "VGI902"] }
+"xgboost.main.explain" = { ignore = ["VGI901", "VGI902"] }
+"xgboost.main.feature_importance" = { ignore = ["VGI901", "VGI902"] }
+"xgboost.main.permutation_importance" = { ignore = ["VGI901", "VGI902"] }
+"xgboost.main.partial_dependence" = { ignore = ["VGI901", "VGI902"] }

@@ -81,7 +81,7 @@ def _resolve_model(model_name: str, model: bytes) -> tuple[Any, ModelMetadata]:
 class FeatureImportanceArgs:
     model_name: Annotated[str, Arg(0, doc="Name of a stored model (pass '' to use model:= instead).")]
     model: Annotated[
-        bytes, Arg("model", default=b"", doc="A model BLOB (as returned by fit). Provide this OR model_name.")
+        bytes, Arg("model", default=b"", doc="A fitted model (as returned by fit). Provide this OR model_name.")
     ]
     importance_type: Annotated[
         str,
@@ -178,12 +178,12 @@ class FeatureImportance(TableFunctionGenerator[FeatureImportanceArgs]):
 
 @dataclass(slots=True, frozen=True)
 class ExplainArgs:
-    data: Annotated[TableInput, Arg(0, doc="Table to explain (must contain the model's feature columns).")]
+    data: Annotated[TableInput, Arg(0, doc="Rows to explain (must contain the model's feature columns).")]
     model_name: Annotated[
         str, Arg("model_name", default="", doc="Name of a model in the registry. Provide this OR model.")
     ]
     model: Annotated[
-        bytes, Arg("model", default=b"", doc="A model BLOB (as returned by fit). Provide this OR model_name.")
+        bytes, Arg("model", default=b"", doc="A fitted model (as returned by fit). Provide this OR model_name.")
     ]
     id: Annotated[str, Arg("id", default="", doc="Optional id column to carry through onto every emitted row.")]
 
@@ -343,11 +343,11 @@ class ExplainModel(TableInOutGenerator[ExplainArgs]):
 
 @dataclass(slots=True, frozen=True)
 class PermImportanceArgs:
-    data: Annotated[TableInput, Arg(0, doc="Evaluation table (the model's features + the target column).")]
+    data: Annotated[TableInput, Arg(0, doc="Evaluation rows: the model's features + the target column.")]
     model_name: Annotated[
         str, Arg("model_name", default="", doc="Name of a model in the registry. Provide this OR model.")
     ]
-    model: Annotated[bytes, Arg("model", default=b"", doc="A model BLOB. Provide this OR model_name.")]
+    model: Annotated[bytes, Arg("model", default=b"", doc="A fitted model. Provide this OR model_name.")]
     target: Annotated[str, Arg("target", default="", doc="Name of the target/label column (required).")]
     n_repeats: Annotated[int, Arg("n_repeats", default=5, doc="Number of times each feature is shuffled.")]
     scoring: Annotated[str, Arg("scoring", default="", doc="Scorer name (default: the estimator's own scorer).")]
@@ -488,12 +488,12 @@ class PermutationImportance(SinkBuffer[PermImportanceArgs, DrainState]):
 
 @dataclass(slots=True, frozen=True)
 class PartialDependenceArgs:
-    data: Annotated[TableInput, Arg(0, doc="Background table (the model's feature columns).")]
+    data: Annotated[TableInput, Arg(0, doc="Background rows over the model's feature columns.")]
     model_name: Annotated[
         str, Arg("model_name", default="", doc="Name of a model in the registry. Provide this OR model.")
     ]
-    model: Annotated[bytes, Arg("model", default=b"", doc="A model BLOB. Provide this OR model_name.")]
-    feature: Annotated[str, Arg("feature", default="", doc="Numeric feature column to vary (required).")]
+    model: Annotated[bytes, Arg("model", default=b"", doc="A fitted model. Provide this OR model_name.")]
+    feature: Annotated[str, Arg("feature", default="", doc="Feature column to vary (required).")]
     grid_resolution: Annotated[int, Arg("grid_resolution", default=100, doc="Number of grid points along the feature.")]
 
 

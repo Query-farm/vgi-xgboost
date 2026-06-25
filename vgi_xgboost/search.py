@@ -191,7 +191,7 @@ def _json_safe(v: Any) -> Any:
 
 @dataclass(slots=True, frozen=True)
 class GridSearchArgs:
-    data: Annotated[TableInput, Arg(0, doc="Training table (features + target [+ id]).")]
+    data: Annotated[TableInput, Arg(0, doc="Training rows: features + target [+ id].")]
     estimator: Annotated[
         TaggedUnion,
         Arg(
@@ -277,7 +277,7 @@ class GridSearch(SinkBuffer[GridSearchArgs, DrainState]):
 
 @dataclass(slots=True, frozen=True)
 class RandomizedSearchArgs:
-    data: Annotated[TableInput, Arg(0, doc="Training table (features + target [+ id]).")]
+    data: Annotated[TableInput, Arg(0, doc="Training rows: features + target [+ id].")]
     estimator: Annotated[
         TaggedUnion,
         Arg(
