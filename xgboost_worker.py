@@ -231,6 +231,168 @@ _CATALOG_AGENT_TEST_TASKS = json.dumps(
                 "WHERE importance > (SELECT avg(importance) FROM fi)",
             ],
         },
+        # --- dataset table functions ---
+        {
+            "name": "wine_sample_count",
+            "prompt": (
+                "How many samples are in the built-in wine recognition dataset? Return a single "
+                "row with one column named n."
+            ),
+            "reference_sql": "SELECT count(*) AS n FROM xgboost.main.wine",
+        },
+        {
+            "name": "california_housing_count",
+            "prompt": (
+                "How many districts are in the built-in California housing dataset? Return a "
+                "single row with one column named n."
+            ),
+            "reference_sql": "SELECT count(*) AS n FROM xgboost.main.california_housing",
+        },
+        {
+            "name": "make_classification_rows",
+            "prompt": (
+                "Generate a synthetic classification dataset with 120 samples, 3 classes, and "
+                "random_state 42, then report how many rows it has. Return a single row with one "
+                "column named n."
+            ),
+            "reference_sql": (
+                "SELECT count(*) AS n FROM xgboost.main.make_classification("
+                "n_samples := 120, n_classes := 3, random_state := 42)"
+            ),
+        },
+        {
+            "name": "make_regression_rows",
+            "prompt": (
+                "Generate a synthetic regression dataset with 90 samples and random_state 42, "
+                "then report how many rows it has. Return a single row with one column named n."
+            ),
+            "reference_sql": (
+                "SELECT count(*) AS n FROM xgboost.main.make_regression("
+                "n_samples := 90, random_state := 42)"
+            ),
+        },
+        # --- typed fit_<estimator> functions (training summary) ---
+        {
+            "name": "fit_xgb_classifier_summary",
+            "prompt": (
+                "Using the typed classifier fitter, train an XGBoost classifier on the iris "
+                "dataset (target column 'target', id column 'sample_id') and report the training "
+                "summary's sample and feature counts. Return one row with columns named n_samples "
+                "and n_features."
+            ),
+            "reference_sql": (
+                "SELECT n_samples, n_features FROM xgboost.main.fit_xgb_classifier("
+                "(SELECT * FROM xgboost.main.iris), target := 'target', id := 'sample_id')"
+            ),
+        },
+        {
+            "name": "fit_xgb_regressor_summary",
+            "prompt": (
+                "Using the typed regressor fitter, train an XGBoost regressor on the diabetes "
+                "dataset (target column 'target', id column 'sample_id') and report the training "
+                "summary's sample and feature counts. Return one row with columns named n_samples "
+                "and n_features."
+            ),
+            "reference_sql": (
+                "SELECT n_samples, n_features FROM xgboost.main.fit_xgb_regressor("
+                "(SELECT * FROM xgboost.main.diabetes), target := 'target', id := 'sample_id')"
+            ),
+        },
+        {
+            "name": "fit_xgb_rf_classifier_summary",
+            "prompt": (
+                "Using the typed random-forest classifier fitter, train an XGBoost RF classifier "
+                "on the iris dataset (target 'target', id 'sample_id') and report the training "
+                "summary's sample and feature counts. Return one row with columns named n_samples "
+                "and n_features."
+            ),
+            "reference_sql": (
+                "SELECT n_samples, n_features FROM xgboost.main.fit_xgb_rf_classifier("
+                "(SELECT * FROM xgboost.main.iris), target := 'target', id := 'sample_id')"
+            ),
+        },
+        {
+            "name": "fit_xgb_rf_regressor_summary",
+            "prompt": (
+                "Using the typed random-forest regressor fitter, train an XGBoost RF regressor on "
+                "the diabetes dataset (target 'target', id 'sample_id') and report the training "
+                "summary's sample and feature counts. Return one row with columns named n_samples "
+                "and n_features."
+            ),
+            "reference_sql": (
+                "SELECT n_samples, n_features FROM xgboost.main.fit_xgb_rf_regressor("
+                "(SELECT * FROM xgboost.main.diabetes), target := 'target', id := 'sample_id')"
+            ),
+        },
+        # --- cross-validation, interpretation ---
+        {
+            "name": "cross_val_predict_accuracy",
+            "prompt": (
+                "Using 5-fold out-of-fold cross-validated predictions from an XGBoost classifier "
+                "on the iris dataset (target 'target', id 'sample_id'), compute the overall "
+                "accuracy of those out-of-fold predictions against the true labels (join by "
+                "sample_id). Round to 4 decimals and return a single column named oof_accuracy."
+            ),
+            "reference_sql": (
+                "SELECT round(avg((p.prediction = i.target)::INT), 4) AS oof_accuracy "
+                "FROM xgboost.main.cross_val_predict((SELECT * FROM xgboost.main.iris), "
+                "estimator := 'xgb_classifier', target := 'target', id := 'sample_id', cv := 5) p "
+                "JOIN xgboost.main.iris i USING (sample_id)"
+            ),
+        },
+        {
+            "name": "shap_top_feature",
+            "prompt": (
+                "Train an XGBoost regressor on the diabetes dataset, then use SHAP contributions "
+                "(via the explain function) to identify the single most influential feature "
+                "overall — the one with the largest mean absolute SHAP value. Return one row with "
+                "a column named feature."
+            ),
+            "reference_sql": [
+                "SET VARIABLE shap_model = (SELECT model FROM xgboost.main.fit("
+                "(SELECT * FROM xgboost.main.diabetes), estimator := 'xgb_regressor', "
+                "target := 'target', id := 'sample_id'))",
+                "SELECT feature FROM xgboost.main.explain((SELECT * FROM xgboost.main.diabetes), "
+                "model := getvariable('shap_model'), id := 'sample_id') GROUP BY feature "
+                "ORDER BY avg(abs(shap_value)) DESC, feature LIMIT 1",
+            ],
+        },
+        {
+            "name": "bmi_partial_dependence_range",
+            "prompt": (
+                "Train an XGBoost regressor on the diabetes dataset, then compute a "
+                "partial-dependence curve for the 'bmi' feature over a 20-point grid, and report "
+                "the minimum and maximum predicted value along the curve, each rounded to 2 "
+                "decimals. Return one row with columns named min_pd and max_pd."
+            ),
+            "reference_sql": [
+                "SET VARIABLE pd_model = (SELECT model FROM xgboost.main.fit("
+                "(SELECT * FROM xgboost.main.diabetes), estimator := 'xgb_regressor', "
+                "target := 'target', id := 'sample_id'))",
+                "SELECT round(min(partial_dependence), 2) AS min_pd, "
+                "round(max(partial_dependence), 2) AS max_pd "
+                "FROM xgboost.main.partial_dependence((SELECT sample_id, age, sex, bmi, bp, s1, "
+                "s2, s3, s4, s5, s6 FROM xgboost.main.diabetes), model := getvariable('pd_model'), "
+                "feature := 'bmi', grid_resolution := 20)",
+            ],
+        },
+        {
+            "name": "top_permutation_feature",
+            "prompt": (
+                "Train an XGBoost regressor on the diabetes dataset, then use permutation "
+                "importance (5 repeats, random_state 42) to find the single most important "
+                "feature by mean importance. Return one row with a column named feature."
+            ),
+            "reference_sql": [
+                "SET VARIABLE perm_model = (SELECT model FROM xgboost.main.fit("
+                "(SELECT * FROM xgboost.main.diabetes), estimator := 'xgb_regressor', "
+                "target := 'target', id := 'sample_id'))",
+                "SELECT feature FROM xgboost.main.permutation_importance("
+                "(SELECT * FROM xgboost.main.diabetes), model := getvariable('perm_model'), "
+                "target := 'target', random_state := 42, n_repeats := 5) "
+                "ORDER BY importance_mean DESC LIMIT 1",
+            ],
+        },
     ]
 )
 _CATALOG_TAGS = {
