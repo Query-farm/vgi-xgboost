@@ -148,6 +148,91 @@ _CATALOG_EXECUTABLE_EXAMPLES = json.dumps(
         },
     ]
 )
+# Fixed agent-suitability suite run by `vgi-lint simulate`. Each task's `prompt`
+# is shown to the simulated analyst; the hidden `reference_sql` is the canonical
+# solution, re-run to grade by deterministic result comparison (training here is
+# reproducible, so exact values match across runs). Prompts name their output
+# columns because grading is strict on column names + values + order. The suite
+# mixes two single-call smoke tests with two multi-step tasks that exercise the
+# worker's real workflow — fit -> model BLOB in a session variable -> predict /
+# interpret, plus a join back to the data — so a pass means an agent can compose
+# the API, not just call one function. The reference_sql doubles as curated
+# few-shot guidance an MCP server can surface.
+_CATALOG_AGENT_TEST_TASKS = json.dumps(
+    [
+        {
+            "name": "breast_cancer_cv_accuracy",
+            "prompt": (
+                "Before deploying a tumor-screening model, I want an honest estimate of how "
+                "accurately gradient boosting distinguishes malignant from benign breast tumors "
+                "on unseen data. Using the built-in Wisconsin breast-cancer dataset and all 30 "
+                "cell-nucleus features, run 5-fold cross-validation with an XGBoost classifier "
+                "and report the mean held-out accuracy across the folds. Return a single row "
+                "with one column named mean_cv_accuracy."
+            ),
+            "reference_sql": (
+                "SELECT avg(score) AS mean_cv_accuracy FROM xgboost.main.cross_val_score("
+                "(SELECT * EXCLUDE (sample_id, target_name) FROM xgboost.main.breast_cancer), "
+                "estimator := 'xgb_classifier', target := 'target', cv := 5)"
+            ),
+        },
+        {
+            "name": "iris_grid_search_best_accuracy",
+            "prompt": (
+                "I'm tuning an XGBoost classifier on Fisher's iris dataset. Run a 5-fold "
+                "cross-validated grid search over n_estimators (30, 60, 90) and max_depth "
+                "(2, 4, 6), and report the best mean cross-validated accuracy across all those "
+                "hyperparameter combinations. Return a single row with one column named "
+                "best_cv_accuracy."
+            ),
+            "reference_sql": (
+                "SELECT max(mean_test_score) AS best_cv_accuracy FROM xgboost.main.grid_search("
+                "(SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, "
+                "petal_width_cm, target FROM xgboost.main.iris), target := 'target', "
+                "id := 'sample_id', cv := 5, estimator := union_value(xgb_classifier := "
+                "{'n_estimators': [30, 60, 90], 'max_depth': [2, 4, 6]}))"
+            ),
+        },
+        {
+            "name": "diabetes_predict_rmse",
+            "prompt": (
+                "Train a gradient-boosted regressor on the diabetes dataset (predict target from "
+                "the baseline measurements), then use the fitted model to predict on those same "
+                "rows and report the root-mean-squared error between the predictions and the "
+                "actual target. The predictions come back keyed by sample_id, so join them back "
+                "to the data by sample_id. Round to 2 decimals and return a single row with one "
+                "column named train_rmse."
+            ),
+            "reference_sql": [
+                "SET VARIABLE diab_model = (SELECT model FROM xgboost.main.fit("
+                "(SELECT * FROM xgboost.main.diabetes), estimator := 'xgb_regressor', "
+                "target := 'target', id := 'sample_id'))",
+                "SELECT round(sqrt(avg((p.prediction - d.target) * (p.prediction - d.target))), 2) "
+                "AS train_rmse FROM xgboost.main.predict((SELECT * FROM xgboost.main.diabetes), "
+                "model := getvariable('diab_model'), id := 'sample_id') p "
+                "JOIN xgboost.main.diabetes d USING (sample_id)",
+            ],
+        },
+        {
+            "name": "n_features_above_mean_gain",
+            "prompt": (
+                "Train a gradient-boosted regressor on the diabetes dataset, compute gain-based "
+                "feature importances, and count how many features have a gain importance strictly "
+                "greater than the mean gain importance across all features. Return a single row "
+                "with one column named n_above_mean."
+            ),
+            "reference_sql": [
+                "SET VARIABLE diab_gain_model = (SELECT model FROM xgboost.main.fit("
+                "(SELECT * FROM xgboost.main.diabetes), estimator := 'xgb_regressor', "
+                "target := 'target', id := 'sample_id'))",
+                "WITH fi AS (SELECT feature, importance FROM xgboost.main.feature_importance('', "
+                "model := getvariable('diab_gain_model'), importance_type := 'gain')) "
+                "SELECT count(*) AS n_above_mean FROM fi "
+                "WHERE importance > (SELECT avg(importance) FROM fi)",
+            ],
+        },
+    ]
+)
 _CATALOG_TAGS = {
     "vgi.doc_llm": _CATALOG_DESCRIPTION_LLM,
     "vgi.doc_md": _CATALOG_DESCRIPTION_MD,
@@ -172,6 +257,7 @@ _CATALOG_TAGS = {
         ]
     ),
     "vgi.executable_examples": _CATALOG_EXECUTABLE_EXAMPLES,
+    "vgi.agent_test_tasks": _CATALOG_AGENT_TEST_TASKS,
 }
 
 # Per-schema metadata for the single `main` schema (VGI506/124/126): title,
