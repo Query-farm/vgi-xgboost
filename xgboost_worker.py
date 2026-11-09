@@ -1,8 +1,8 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#     "vgi-python[http,oauth]>=0.8.5",
-#     "vgi-rpc[sentry]>=0.20.4",
+#     "vgi-python[http,oauth]>=0.50.0",
+#     "vgi-rpc[sentry]>=0.53.1",
 #     "xgboost>=2.0",
 #     "scikit-learn>=1.5",
 #     "numpy",
@@ -31,7 +31,7 @@ import os
 from typing import Any
 
 from vgi import Worker
-from vgi.catalog import Catalog, ReadOnlyCatalogInterface, Schema, Table
+from vgi.catalog import Catalog, ReadOnlyCatalogInterface, Schema, Table, constraint_record
 from vgi.catalog.catalog_interface import CatalogAttachResult, CatalogInfo
 
 from vgi_xgboost import __version__
@@ -681,14 +681,22 @@ def _function_table(fn: type) -> Table:
     meta = getattr(fn, "Meta")  # noqa: B009 - Meta is a dynamic per-function class
     tm = _TABLE_META[meta.name]
     primary_key = tm["primary_key"]
-    # The key columns are inherently non-null (VGI804).
-    not_null = tuple(dict.fromkeys(col for cols in primary_key for col in cols))
+    # vgi.v3 carries constraints as canonical records; a PRIMARY_KEY record
+    # also makes its key columns non-null (VGI804).
+    pk = constraint_record(
+        ["main"],
+        meta.name,
+        "pk",
+        "PRIMARY_KEY",
+        [list(cols) for cols in primary_key],
+        enforcement="ENFORCED",
+        validation="ALL_ROWS",
+    )
     return Table(
         name=meta.name,
         function=fn,
         comment=tm["comment"],
-        primary_key=primary_key,
-        not_null=not_null,
+        constraints=(pk,),
         tags={
             "provider": "XGBoost",
             "domain": "machine-learning",
@@ -710,7 +718,7 @@ _XGBOOST_CATALOG = Catalog(
     tags=_CATALOG_TAGS,
     schemas=[
         Schema(
-            name="main",
+            path=["main"],
             comment="XGBoost train/predict model registry, datasets, and interpretation for SQL",
             tags=_SCHEMA_TAGS,
             tables=_TABLES,
