@@ -681,22 +681,37 @@ def _function_table(fn: type) -> Table:
     meta = getattr(fn, "Meta")  # noqa: B009 - Meta is a dynamic per-function class
     tm = _TABLE_META[meta.name]
     primary_key = tm["primary_key"]
-    # vgi.v3 carries constraints as canonical records; a PRIMARY_KEY record
-    # also makes its key columns non-null (VGI804).
-    pk = constraint_record(
-        ["main"],
-        meta.name,
-        "pk",
-        "PRIMARY_KEY",
-        [list(cols) for cols in primary_key],
-        enforcement="ENFORCED",
-        validation="ALL_ROWS",
+    # vgi.v3 carries constraints as canonical records. The key columns are
+    # inherently non-null (VGI804), so declare that explicitly as well.
+    key_cols = list(dict.fromkeys(col for cols in primary_key for col in cols))
+    records = (
+        constraint_record(
+            ["main"],
+            meta.name,
+            "pk",
+            "PRIMARY_KEY",
+            [list(cols) for cols in primary_key],
+            enforcement="ENFORCED",
+            validation="ALL_ROWS",
+        ),
+        *(
+            constraint_record(
+                ["main"],
+                meta.name,
+                f"{col}_not_null",
+                "NOT_NULL",
+                [[col]],
+                enforcement="ENFORCED",
+                validation="ALL_ROWS",
+            )
+            for col in key_cols
+        ),
     )
     return Table(
         name=meta.name,
         function=fn,
         comment=tm["comment"],
-        constraints=(pk,),
+        constraints=records,
         tags={
             "provider": "XGBoost",
             "domain": "machine-learning",
