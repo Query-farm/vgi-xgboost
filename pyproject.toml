@@ -38,6 +38,18 @@ warn_unused_ignores = true
 no_implicit_optional = true
 files = ["vgi_xgboost", "xgboost_worker.py", "serve.py"]
 
+[tool.vgi-lint-check.execution]
+# Serialize the execute pass. By default it fans out one cursor per CPU, and on a
+# 4-core runner each cursor's worker process cold-imports xgboost + scikit-learn
+# and trains with every core, so the scans starve each other: even the in-memory
+# breast_cancer/diabetes scans (and three executable examples that take ~1s when
+# run alone) missed the 10s/30s caps in CI. The fit/search/cross-validation
+# functions must consume their whole input and train before emitting a first
+# batch, so their scan window is widened to the per-query timeout; the
+# per-query timeout itself is unchanged.
+concurrency = 1
+scan_timeout = 30
+
 [tool.vgi-lint-check.per_object]
 # VGI901/902/911 (--execute only) run each example's SQL / a scan live. These functions read a
 # *stored* model at bind time, so their single-statement illustrative examples
