@@ -34,7 +34,7 @@ from vgi.table_function import (
 )
 from vgi_rpc.rpc import OutputCollector
 
-from .schema_utils import NoArgs, columns_md, columns_md_rows, dedupe_names, field, snake_case
+from .schema_utils import NoArgs, dedupe_names, field, result_columns_schema, result_dynamic_columns_md, snake_case
 
 _RESERVED = {"sample_id", "target", "target_name"}
 
@@ -168,7 +168,7 @@ class IrisFunction(_ToyDataset):
         categories = ["datasets", "classification"]
         projection_pushdown = True
         tags = {
-            "vgi.result_columns_md": columns_md(_IRIS_SCHEMA),
+            "vgi.result_columns_schema": result_columns_schema(_IRIS_SCHEMA),
             "vgi.doc_llm": (
                 "Zero-argument table function returning Fisher's classic iris dataset: 150 rows, four "
                 "numeric flower measurements in centimetres (`sepal_length_cm`, `sepal_width_cm`, "
@@ -179,17 +179,20 @@ class IrisFunction(_ToyDataset):
             ),
             "vgi.doc_md": (
                 "**Iris dataset** — 150 flowers, 4 measurements, 3 species (the canonical ML toy set).\n\n"
-                "- `sample_id` INTEGER — 0-based row index\n"
-                "- four `*_cm` DOUBLE feature columns (sepal/petal length & width)\n"
-                "- `target` INTEGER (0–2) and `target_name` the species name\n\n"
+                "- `sample_id` `INTEGER` — 0-based row index\n"
+                "- four `*_cm` `DOUBLE` feature columns (sepal/petal length & width)\n"
+                "- `target` `INTEGER` (0–2) and `target_name` the species name\n\n"
                 "Takes no arguments. The go-to small, balanced 3-class classification demo and the input "
                 "used in most examples here."
             ),
         }
         examples = [
-            FunctionExample(sql="SELECT * FROM xgboost.iris()", description="Load the full iris dataset"),
             FunctionExample(
-                sql="SELECT target_name, avg(petal_length_cm) FROM xgboost.iris() GROUP BY target_name",
+                sql="SELECT target_name, count(*) AS n FROM xgboost.main.iris() GROUP BY ALL ORDER BY target_name",
+                description="Samples per iris species",
+            ),
+            FunctionExample(
+                sql="SELECT target_name, avg(petal_length_cm) FROM xgboost.main.iris() GROUP BY target_name",
                 description="Mean petal length per species",
             ),
         ]
@@ -209,7 +212,7 @@ class WineFunction(_ToyDataset):
         categories = ["datasets", "classification"]
         projection_pushdown = True
         tags = {
-            "vgi.result_columns_md": columns_md(_WINE_SCHEMA),
+            "vgi.result_columns_schema": result_columns_schema(_WINE_SCHEMA),
             "vgi.doc_llm": (
                 "Zero-argument table function returning the wine-recognition dataset: 178 rows, one per "
                 "wine sample, with 13 numeric chemical-analysis features (alcohol, malic acid, ash, "
@@ -219,13 +222,21 @@ class WineFunction(_ToyDataset):
             ),
             "vgi.doc_md": (
                 "**Wine dataset** — 178 wines from three cultivars.\n\n"
-                "- `sample_id` INTEGER — 0-based row index\n"
-                "- 13 DOUBLE chemical features (alcohol, phenols, colour intensity, proline, ...)\n"
-                "- `target` INTEGER (0–2) and `target_name` the cultivar\n\n"
+                "- `sample_id` `INTEGER` — 0-based row index\n"
+                "- 13 `DOUBLE` chemical features (alcohol, phenols, colour intensity, proline, ...)\n"
+                "- `target` `INTEGER` (0–2) and `target_name` the cultivar\n\n"
                 "Takes no arguments. A continuous-feature 3-class classification benchmark."
             ),
         }
-        examples = [FunctionExample(sql="SELECT * FROM xgboost.wine()", description="Load the wine dataset")]
+        examples = [
+            FunctionExample(
+                sql=(
+                    "SELECT target_name, round(avg(alcohol), 2) AS mean_alcohol "
+                    "FROM xgboost.main.wine() GROUP BY target_name ORDER BY target_name"
+                ),
+                description="Mean alcohol content per wine cultivar",
+            )
+        ]
 
 
 @init_single_worker
@@ -242,7 +253,7 @@ class BreastCancerFunction(_ToyDataset):
         categories = ["datasets", "classification"]
         projection_pushdown = True
         tags = {
-            "vgi.result_columns_md": columns_md(_CANCER_SCHEMA),
+            "vgi.result_columns_schema": result_columns_schema(_CANCER_SCHEMA),
             "vgi.doc_llm": (
                 "Zero-argument table function returning the Wisconsin breast-cancer diagnostic dataset: "
                 "569 rows, one per tumour, with 30 numeric features summarising cell-nucleus geometry "
@@ -252,14 +263,20 @@ class BreastCancerFunction(_ToyDataset):
             ),
             "vgi.doc_md": (
                 "**Breast cancer (Wisconsin) dataset** — 569 tumour samples, binary outcome.\n\n"
-                "- `sample_id` INTEGER — 0-based row index\n"
-                "- 30 DOUBLE cell-nucleus features (mean / SE / worst of radius, texture, area, ...)\n"
-                "- `target` INTEGER (0 malignant, 1 benign) and `target_name`\n\n"
+                "- `sample_id` `INTEGER` — 0-based row index\n"
+                "- 30 `DOUBLE` cell-nucleus features (mean / SE / worst of radius, texture, area, ...)\n"
+                "- `target` `INTEGER` (0 malignant, 1 benign) and `target_name`\n\n"
                 "Takes no arguments. The canonical binary-classification toy set."
             ),
         }
         examples = [
-            FunctionExample(sql="SELECT * FROM xgboost.breast_cancer()", description="Load the breast cancer dataset")
+            FunctionExample(
+                sql=(
+                    "SELECT target_name, count(*) AS n, round(avg(mean_radius), 2) AS avg_mean_radius "
+                    "FROM xgboost.main.breast_cancer() GROUP BY target_name ORDER BY target_name"
+                ),
+                description="Tumour count and mean nucleus radius by diagnosis",
+            )
         ]
 
 
@@ -278,7 +295,7 @@ class DiabetesFunction(_ToyDataset):
         categories = ["datasets", "regression"]
         projection_pushdown = True
         tags = {
-            "vgi.result_columns_md": columns_md(_DIABETES_SCHEMA),
+            "vgi.result_columns_schema": result_columns_schema(_DIABETES_SCHEMA),
             "vgi.doc_llm": (
                 "Zero-argument table function returning the diabetes regression dataset: 442 rows, one per "
                 "patient, with 10 mean-centred, scaled baseline features (`age`, `sex`, `bmi`, blood "
@@ -288,13 +305,18 @@ class DiabetesFunction(_ToyDataset):
             ),
             "vgi.doc_md": (
                 "**Diabetes dataset** — 442 patients, continuous regression target.\n\n"
-                "- `sample_id` INTEGER — 0-based row index\n"
-                "- 10 DOUBLE scaled baseline features (`age`, `sex`, `bmi`, `bp`, `s1`–`s6`)\n"
-                "- `target` DOUBLE — one-year disease-progression score\n\n"
+                "- `sample_id` `INTEGER` — 0-based row index\n"
+                "- 10 `DOUBLE` scaled baseline features (`age`, `sex`, `bmi`, `bp`, `s1`–`s6`)\n"
+                "- `target` `DOUBLE` — one-year disease-progression score\n\n"
                 "Takes no arguments. A small regression toy set."
             ),
         }
-        examples = [FunctionExample(sql="SELECT * FROM xgboost.diabetes()", description="Load the diabetes dataset")]
+        examples = [
+            FunctionExample(
+                sql="SELECT count(*) AS n, round(avg(target), 1) AS mean_progression FROM xgboost.main.diabetes()",
+                description="Patient count and mean disease-progression score",
+            )
+        ]
 
 
 _CALIFORNIA_SCHEMA = _regression_schema(
@@ -319,7 +341,7 @@ class CaliforniaHousingFunction(TableFunctionGenerator[NoArgs]):
         categories = ["datasets", "regression", "fetched"]
         projection_pushdown = True
         tags = {
-            "vgi.result_columns_md": columns_md(_CALIFORNIA_SCHEMA),
+            "vgi.result_columns_schema": result_columns_schema(_CALIFORNIA_SCHEMA),
             "vgi.doc_llm": (
                 "Zero-argument table function returning the California-housing regression dataset: 20,640 "
                 "rows, one per 1990 census block group, with 8 numeric features (median income `medinc`, "
@@ -329,16 +351,19 @@ class CaliforniaHousingFunction(TableFunctionGenerator[NoArgs]):
             ),
             "vgi.doc_md": (
                 "**California housing dataset** — 20,640 census block groups, regression.\n\n"
-                "- `sample_id` INTEGER — 0-based row index\n"
-                "- 8 DOUBLE features (`medinc`, `houseage`, `averooms`, `latitude`, `longitude`, ...)\n"
-                "- `target` DOUBLE — median house value (in $100k)\n\n"
+                "- `sample_id` `INTEGER` — 0-based row index\n"
+                "- 8 `DOUBLE` features (`medinc`, `houseage`, `averooms`, `latitude`, `longitude`, ...)\n"
+                "- `target` `DOUBLE` — median house value (in $100k)\n\n"
                 "Takes no arguments. Downloads on first use; a larger regression benchmark."
             ),
         }
         examples = [
             FunctionExample(
-                sql="SELECT * FROM xgboost.california_housing()",
-                description="Load the California housing dataset (downloads on first use)",
+                sql=(
+                    "SELECT count(*) AS n_districts, round(avg(target), 3) AS mean_value_100k "
+                    "FROM xgboost.main.california_housing()"
+                ),
+                description="District count and mean house value (downloads on first use)",
             )
         ]
 
@@ -378,33 +403,46 @@ class MakeClassificationFunction(TableFunctionGenerator[MakeClassificationArgs])
         categories = ["datasets", "synthetic", "classification"]
         projection_pushdown = True
         tags = {
-            "vgi.result_columns_md": columns_md_rows(
+            "vgi.result_dynamic_columns_md": result_dynamic_columns_md(
+                ("The number of `feature_<i>` columns is set by `n_features`; every other column is fixed."),
                 [
-                    ("sample_id", "INTEGER", "Row index within the generated sample (0-based)."),
-                    ("target", "INTEGER", "Integer class label (0-based)."),
+                    (
+                        "With n_features := 5 (one feature_<i> column per feature in general)",
+                        [
+                            ("sample_id", "INTEGER", "Row index within the generated sample (0-based)."),
+                            ("feature_0", "DOUBLE", "Generated feature 0."),
+                            ("feature_1", "DOUBLE", "Generated feature 1."),
+                            ("feature_2", "DOUBLE", "Generated feature 2."),
+                            ("feature_3", "DOUBLE", "Generated feature 3."),
+                            ("feature_4", "DOUBLE", "Generated feature 4."),
+                            ("target", "INTEGER", "Integer class label (0-based)."),
+                        ],
+                    ),
                 ],
-                note="Plus one `feature_<i>` DOUBLE column per feature (count set by `n_features`).",
             ),
             "vgi.doc_llm": (
                 "Table function that synthesises a random n-class classification problem (scikit-learn's "
                 "`make_classification`). Control the shape with `n_samples`, `n_features`, `n_informative`, "
                 "`n_classes`, and `random_state`; the output schema has a `sample_id`, one `feature_<i>` "
-                "DOUBLE column per feature, and an integer `target`. Use it to generate reproducible "
+                "`DOUBLE` column per feature, and an integer `target`. Use it to generate reproducible "
                 "training data of an arbitrary size/dimensionality for fit/predict, search, or benchmarks "
                 "without loading a real dataset."
             ),
             "vgi.doc_md": (
                 "**Synthetic classification generator** — a random n-class problem.\n\n"
                 "- Args: `n_samples`, `n_features`, `n_informative`, `n_classes`, `random_state`\n"
-                "- `sample_id` INTEGER, `target` INTEGER (0-based label)\n"
-                "- one `feature_<i>` DOUBLE column per feature (width set by `n_features`)\n\n"
+                "- `sample_id` `INTEGER`, `target` `INTEGER` (0-based label)\n"
+                "- one `feature_<i>` `DOUBLE` column per feature (width set by `n_features`)\n\n"
                 "Reproducible for a fixed `random_state`; great for sizing/stress demos."
             ),
         }
         examples = [
             FunctionExample(
-                sql="SELECT * FROM xgboost.make_classification(n_samples => 500, n_features => 5, n_classes => 3)",
-                description="500 rows, 5 features, 3 classes",
+                sql=(
+                    "SELECT target, count(*) AS n FROM xgboost.main.make_classification("
+                    "n_samples => 500, n_features => 5, n_classes => 3) GROUP BY target ORDER BY target"
+                ),
+                description="Class balance of 500 generated rows with 5 features and 3 classes",
             )
         ]
 
@@ -460,33 +498,45 @@ class MakeRegressionFunction(TableFunctionGenerator[MakeRegressionArgs]):
         categories = ["datasets", "synthetic", "regression"]
         projection_pushdown = True
         tags = {
-            "vgi.result_columns_md": columns_md_rows(
+            "vgi.result_dynamic_columns_md": result_dynamic_columns_md(
+                ("The number of `feature_<i>` columns is set by `n_features`; every other column is fixed."),
                 [
-                    ("sample_id", "INTEGER", "Row index within the generated sample (0-based)."),
-                    ("target", "DOUBLE", "Continuous regression target."),
+                    (
+                        "With n_features := 4 (one feature_<i> column per feature in general)",
+                        [
+                            ("sample_id", "INTEGER", "Row index within the generated sample (0-based)."),
+                            ("feature_0", "DOUBLE", "Generated feature 0."),
+                            ("feature_1", "DOUBLE", "Generated feature 1."),
+                            ("feature_2", "DOUBLE", "Generated feature 2."),
+                            ("feature_3", "DOUBLE", "Generated feature 3."),
+                            ("target", "DOUBLE", "Continuous regression target."),
+                        ],
+                    ),
                 ],
-                note="Plus one `feature_<i>` DOUBLE column per feature (count set by `n_features`).",
             ),
             "vgi.doc_llm": (
                 "Table function that synthesises a random linear regression problem (scikit-learn's "
                 "`make_regression`). Control the shape with `n_samples`, `n_features`, `n_informative`, "
                 "`noise`, and `random_state`; the output schema has a `sample_id`, one `feature_<i>` "
-                "DOUBLE column per feature, and a continuous DOUBLE `target`. Use it to generate "
+                "`DOUBLE` column per feature, and a continuous `DOUBLE` `target`. Use it to generate "
                 "reproducible regression data of an arbitrary size with a tunable noise level for "
                 "fit/predict, search, or interpretation demos."
             ),
             "vgi.doc_md": (
                 "**Synthetic regression generator** — a random linear problem with optional noise.\n\n"
                 "- Args: `n_samples`, `n_features`, `n_informative`, `noise`, `random_state`\n"
-                "- `sample_id` INTEGER, `target` DOUBLE (continuous)\n"
-                "- one `feature_<i>` DOUBLE column per feature (width set by `n_features`)\n\n"
+                "- `sample_id` `INTEGER`, `target` `DOUBLE` (continuous)\n"
+                "- one `feature_<i>` `DOUBLE` column per feature (width set by `n_features`)\n\n"
                 "`noise` controls the output's standard deviation; reproducible for a fixed seed."
             ),
         }
         examples = [
             FunctionExample(
-                sql="SELECT * FROM xgboost.make_regression(n_samples => 500, n_features => 4, noise => 5.0)",
-                description="500 rows, 4 features, noisy target",
+                sql=(
+                    "SELECT count(*) AS n, round(stddev(target), 2) AS target_sd FROM xgboost.main.make_regression("
+                    "n_samples => 500, n_features => 4, noise => 5.0)"
+                ),
+                description="Size and target spread of 500 generated rows with 4 features",
             )
         ]
 

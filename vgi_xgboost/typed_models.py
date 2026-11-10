@@ -36,12 +36,12 @@ from vgi.table_function import BindParams
 from .buffering import DrainState, SinkBuffer, input_schema_of
 from .models import _ESTIMATORS, _FIT_SCHEMA, _fit_and_emit
 from .registry import validate_name
-from .schema_utils import columns_md
+from .schema_utils import result_columns_schema
 
 _UNSET: Any = object()
 
 # All typed fit_<estimator> functions share the generic fit result schema.
-_FIT_COLUMNS_MD = columns_md(_FIT_SCHEMA)
+_FIT_RESULT_SCHEMA = result_columns_schema(_FIT_SCHEMA)
 
 
 @dataclass(frozen=True)
@@ -54,6 +54,7 @@ class _HP:
     doc: str
     none_if: Any = _UNSET  # if the SQL value equals this, omit the kwarg so XGBoost uses its own default
     kwarg: str | None = None  # XGBoost kwarg name, if it differs from ``name``
+    choices: tuple[Any, ...] | None = None  # allowed values, advertised to agents (VGI317)
 
 
 # XGBoost's most-tuned hyperparameters. Each defaults to XGBoost's own documented
@@ -71,8 +72,21 @@ _TREE_BOOSTER = [
     _HP("reg_alpha", float, 0.0, "L1 regularization on weights."),
     _HP("reg_lambda", float, 1.0, "L2 regularization on weights."),
     _HP("objective", str, "", "Learning objective (e.g. 'binary:logistic'); '' = task default.", none_if=""),
-    _HP("booster", str, "", "Booster: 'gbtree', 'gblinear', or 'dart' ('' = default).", none_if=""),
-    _HP("tree_method", str, "hist", "Tree construction algorithm ('hist', 'approx', 'exact')."),
+    _HP(
+        "booster",
+        str,
+        "",
+        "Booster: 'gbtree', 'gblinear', or 'dart' ('' = default).",
+        none_if="",
+        choices=("", "gbtree", "gblinear", "dart"),
+    ),
+    _HP(
+        "tree_method",
+        str,
+        "hist",
+        "Tree construction algorithm ('hist', 'approx', 'exact').",
+        choices=("hist", "approx", "exact"),
+    ),
     _HP("random_state", int, 0, "Random seed."),
 ]
 
@@ -117,8 +131,8 @@ def _typed_doc_tags(est_name: str) -> dict[str, str]:
         f"`fit(estimator := '{est_name}', ...)` but discoverable and type-checked in the catalog instead "
         f"of a JSON `params` blob. Name the {task} label with `target :=`, optionally carry an `id :=` "
         f"through; every other column is a feature (strings/missing values handled natively). Returns the "
-        f"same one-row summary with a reusable `model` BLOB, and persists to the registry when "
-        f"`model_name :=` is given. Feed the BLOB to `predict`/`explain`/`feature_importance`."
+        f"same one-row summary with a reusable `model` `BLOB`, and persists to the registry when "
+        f"`model_name :=` is given. Feed the `BLOB` to `predict`/`explain`/`feature_importance`."
     )
     doc_md = (
         f"**`fit_{est_name}`** — fit a {blurb} with typed hyperparameters.\n\n"
@@ -126,11 +140,11 @@ def _typed_doc_tags(est_name: str) -> dict[str, str]:
         f"passthrough\n"
         f"- Hyperparameters are named, typed SQL args (`n_estimators`, `max_depth`, `learning_rate`, "
         f"`subsample`, `reg_lambda`, ...) at XGBoost's real defaults\n"
-        f"- Returns the standard fit summary plus a reusable `model` BLOB; `model_name :=` also persists "
+        f"- Returns the standard fit summary plus a reusable `model` `BLOB`; `model_name :=` also persists "
         f"it\n\n"
         f"The discoverable, type-checked alternative to `fit(estimator := '{est_name}', ...)`."
     )
-    return {"vgi.result_columns_md": _FIT_COLUMNS_MD, "vgi.doc_llm": doc_llm, "vgi.doc_md": doc_md}
+    return {"vgi.result_columns_schema": _FIT_RESULT_SCHEMA, "vgi.doc_llm": doc_llm, "vgi.doc_md": doc_md}
 
 
 def _estimator_kwargs(spec: list[_HP], args: Any) -> dict[str, Any]:
@@ -163,9 +177,8 @@ def _make_args_class(est_name: str, spec: list[_HP]) -> type:
         ("id", Annotated[str, Arg("id", default="", doc="Optional id passthrough column.")], dc_field(default="")),
     ]
     for hp in spec:
-        fields.append(
-            (hp.name, Annotated[hp.type, Arg(hp.name, default=hp.default, doc=hp.doc)], dc_field(default=hp.default))
-        )
+        arg = Arg(hp.name, default=hp.default, doc=hp.doc, choices=hp.choices)
+        fields.append((hp.name, Annotated[hp.type, arg], dc_field(default=hp.default)))
     cls_name = "Fit" + "".join(p.title() for p in est_name.split("_")) + "Args"
     return make_dataclass(cls_name, fields, frozen=True, slots=True)
 
@@ -232,7 +245,8 @@ def _make_fit_function(est_name: str) -> type:
             "examples": [
                 FunctionExample(
                     sql=(
-                        f"SELECT * FROM xgboost.{fn_name}((SELECT * FROM xgboost.iris()), "
+                        f"SELECT n_samples, n_features, train_score FROM xgboost.main.{fn_name}("
+                        f"(SELECT * FROM xgboost.main.iris()), "
                         f"target := 'target', id := 'sample_id', {param_hint})"
                     ),
                     description=f"Train a {est_name} with named hyperparameters",

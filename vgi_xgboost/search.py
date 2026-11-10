@@ -40,8 +40,8 @@ from vgi.table_function import BindParams
 from .buffering import DrainState, SinkBuffer, input_schema_of
 from .models import _ESTIMATORS, _features_excluding, _xy, build_estimator
 from .registry import ModelMetadata, get_store, now_iso, pack_model, validate_name
-from .schema_utils import columns_md
 from .schema_utils import field as sfield
+from .schema_utils import result_columns_schema
 from .typed_models import _HPARAMS, _UNSET
 
 _PYTYPE_TO_ARROW: dict[type, pa.DataType] = {
@@ -215,7 +215,7 @@ class GridSearch(SinkBuffer[GridSearchArgs, DrainState]):
         description = "Cross-validated grid search over an XGBoost estimator's hyperparameters"
         categories = ["models", "supervised", "tuning"]
         tags = {
-            "vgi.result_columns_md": columns_md(_SEARCH_SCHEMA),
+            "vgi.result_columns_schema": result_columns_schema(_SEARCH_SCHEMA),
             "vgi.doc_llm": (
                 "Runs scikit-learn's `GridSearchCV` over a training table and returns the cross-validation "
                 "leaderboard — one row per hyperparameter combination tried, with its `params` (JSON), "
@@ -223,7 +223,7 @@ class GridSearch(SinkBuffer[GridSearchArgs, DrainState]):
                 "one tagged-union argument: `estimator := union_value(<estimator> := {param: [values], "
                 "...})`, where the union tag picks the estimator and each member exposes only that "
                 "estimator's hyperparameters; omitted params stay at their default. Set `target :=`, "
-                "`cv :=` folds, optional `scoring :=`. The refit best model rides as a `model` BLOB on the "
+                "`cv :=` folds, optional `scoring :=`. The refit best model rides as a `model` `BLOB` on the "
                 "rank-1 row — grab it with `WHERE model IS NOT NULL`; pass `model_name :=` to also persist "
                 "it."
             ),
@@ -233,14 +233,14 @@ class GridSearch(SinkBuffer[GridSearchArgs, DrainState]):
                 "union; only that estimator's params are exposed)\n"
                 "- `target :=`, `cv :=` folds, optional `scoring :=`, optional `model_name :=`\n"
                 "- Returns the leaderboard: `params`, `mean_test_score`, `std_test_score`, `rank`\n\n"
-                "The refit best model is a `model` BLOB on the rank-1 row — `WHERE model IS NOT NULL`."
+                "The refit best model is a `model` `BLOB` on the rank-1 row — `WHERE model IS NOT NULL`."
             ),
         }
         examples = [
             FunctionExample(
                 sql=(
-                    "SELECT params, mean_test_score, rank FROM xgboost.grid_search("
-                    "(SELECT * FROM xgboost.iris()), target := 'target', id := 'sample_id', "
+                    "SELECT params, mean_test_score, rank FROM xgboost.main.grid_search("
+                    "(SELECT * FROM xgboost.main.iris()), target := 'target', id := 'sample_id', "
                     "estimator := union_value(xgb_classifier := "
                     "{'n_estimators': [50, 100], 'max_depth': [3, 5]})) ORDER BY rank"
                 ),
@@ -303,7 +303,7 @@ class RandomizedSearch(SinkBuffer[RandomizedSearchArgs, DrainState]):
         description = "Cross-validated randomized search: sample n_iter hyperparameter combinations"
         categories = ["models", "supervised", "tuning"]
         tags = {
-            "vgi.result_columns_md": columns_md(_SEARCH_SCHEMA),
+            "vgi.result_columns_schema": result_columns_schema(_SEARCH_SCHEMA),
             "vgi.doc_llm": (
                 "Runs scikit-learn's `RandomizedSearchCV` over a training table, sampling `n_iter :=` "
                 "random hyperparameter combinations (capped at the grid size) instead of exhausting the "
@@ -311,7 +311,7 @@ class RandomizedSearch(SinkBuffer[RandomizedSearchArgs, DrainState]):
                 "`estimator := union_value(<estimator> := {param: [values], ...})`; omitted params stay at "
                 "their default. Set `target :=`, `cv :=` folds, `random_state :=` for reproducible "
                 "sampling, optional `scoring :=`. Returns the same leaderboard (`params`, "
-                "`mean_test_score`, `std_test_score`, `rank`) with the refit best model as a `model` BLOB "
+                "`mean_test_score`, `std_test_score`, `rank`) with the refit best model as a `model` `BLOB` "
                 "on the rank-1 row (`WHERE model IS NOT NULL`); `model_name :=` also persists it."
             ),
             "vgi.doc_md": (
@@ -320,14 +320,14 @@ class RandomizedSearch(SinkBuffer[RandomizedSearchArgs, DrainState]):
                 "- `n_iter :=` combinations to sample (capped at grid size), `random_state :=` for "
                 "reproducibility\n"
                 "- `target :=`, `cv :=` folds, optional `scoring :=`, optional `model_name :=`\n\n"
-                "Cheaper than `grid_search` on large grids; best model is a `model` BLOB on the rank-1 row."
+                "Cheaper than `grid_search` on large grids; best model is a `model` `BLOB` on the rank-1 row."
             ),
         }
         examples = [
             FunctionExample(
                 sql=(
-                    "SELECT params, mean_test_score, rank FROM xgboost.randomized_search("
-                    "(SELECT * FROM xgboost.iris()), target := 'target', id := 'sample_id', n_iter := 4, "
+                    "SELECT params, mean_test_score, rank FROM xgboost.main.randomized_search("
+                    "(SELECT * FROM xgboost.main.iris()), target := 'target', id := 'sample_id', n_iter := 4, "
                     "estimator := union_value(xgb_classifier := "
                     "{'n_estimators': [50, 100, 200], 'max_depth': [3, 5, 8]})) ORDER BY rank"
                 ),

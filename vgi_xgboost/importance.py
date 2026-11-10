@@ -47,7 +47,7 @@ from .buffering import DrainState, SinkBuffer, input_schema_of
 from .features import build_x_predict
 from .models import CLASSIFICATION
 from .registry import ModelMetadata, ModelNotFoundError, get_store, unpack_meta, unpack_model
-from .schema_utils import columns_md, columns_md_rows
+from .schema_utils import ID_COLUMN, result_columns_schema, result_dynamic_columns_md
 from .schema_utils import field as sfield
 
 _IMPORTANCE_TYPES = {"weight", "gain", "cover", "total_gain", "total_cover"}
@@ -85,7 +85,12 @@ class FeatureImportanceArgs:
     ]
     importance_type: Annotated[
         str,
-        Arg("importance_type", default="gain", doc="weight, gain, cover, total_gain, or total_cover."),
+        Arg(
+            "importance_type",
+            default="gain",
+            doc="weight, gain, cover, total_gain, or total_cover.",
+            choices=("weight", "gain", "cover", "total_gain", "total_cover"),
+        ),
     ]
 
 
@@ -108,19 +113,19 @@ class FeatureImportance(TableFunctionGenerator[FeatureImportanceArgs]):
         description = "Per-feature importance (weight/gain/cover) for a stored model, ranked"
         categories = ["models", "interpretation"]
         tags = {
-            "vgi.result_columns_md": columns_md(_IMPORTANCE_SCHEMA),
+            "vgi.result_columns_schema": result_columns_schema(_IMPORTANCE_SCHEMA),
             "vgi.doc_llm": (
                 "Returns the booster's built-in per-feature importance for a stored model, one ranked row "
                 "per feature (`feature`, `importance`, `rank`; rank 1 = most important, already sorted "
                 "descending). Identify the model positionally by name (`feature_importance('m')`) or with "
-                "`model :=` (a BLOB). Choose the `importance_type :=` — `gain` (default; average loss "
+                "`model :=` (a `BLOB`). Choose the `importance_type :=` — `gain` (default; average loss "
                 "reduction), `weight` (split count), `cover`, `total_gain`, or `total_cover`. Features "
                 "never used in a split report importance 0. A fast, model-native ranking; for a "
                 "model-agnostic alternative use `permutation_importance`."
             ),
             "vgi.doc_md": (
                 "**Booster feature importance** — model-native, ranked.\n\n"
-                "- Identify the model by name (`feature_importance('m')`) or `model :=` BLOB\n"
+                "- Identify the model by name (`feature_importance('m')`) or `model :=` `BLOB`\n"
                 "- `importance_type :=` `gain` (default) | `weight` | `cover` | `total_gain` | "
                 "`total_cover`\n"
                 "- Returns `(feature, importance, rank)`, sorted by importance descending\n\n"
@@ -129,8 +134,11 @@ class FeatureImportance(TableFunctionGenerator[FeatureImportanceArgs]):
         }
         examples = [
             FunctionExample(
-                sql="SELECT * FROM xgboost.feature_importance('iris_clf', importance_type => 'gain')",
-                description="Gain-based feature importance for a stored model",
+                sql=(
+                    "SELECT feature, importance, rank FROM xgboost.main.feature_importance("
+                    "'iris_clf', importance_type => 'gain') WHERE rank <= 3"
+                ),
+                description="Top three features by gain for a stored model",
             )
         ]
 
@@ -199,24 +207,40 @@ class ExplainModel(TableInOutGenerator[ExplainArgs]):
         description = "Per-row SHAP feature contributions, long format (row, [class], feature, shap_value, base_value)"
         categories = ["models", "interpretation", "inference"]
         tags = {
-            "vgi.result_columns_md": columns_md_rows(
-                [
-                    ("feature", "VARCHAR", "Feature column name."),
-                    ("shap_value", "DOUBLE", "Contribution of the feature to the raw margin."),
-                    ("base_value", "DOUBLE", "Model base (expected) raw-margin value."),
-                ],
-                note=(
-                    "Long format: one row per (input row, feature). If an `id` column is named, it is carried "
-                    "through as the first column. For multiclass models a `class` BIGINT column is added "
-                    "(one row per (input row, class, feature))."
+            "vgi.result_dynamic_columns_md": result_dynamic_columns_md(
+                (
+                    "Long format: one row per (input row, feature). If `id :=` names a column it is carried "
+                    "through first, and multiclass models add a `class` column (one row per input row, class "
+                    "and feature)."
                 ),
+                [
+                    (
+                        "Binary classification or regression",
+                        [
+                            ID_COLUMN,
+                            ("feature", "VARCHAR", "Feature column name."),
+                            ("shap_value", "DOUBLE", "Contribution of the feature to the raw margin."),
+                            ("base_value", "DOUBLE", "Model base (expected) raw-margin value."),
+                        ],
+                    ),
+                    (
+                        "Multiclass classification",
+                        [
+                            ID_COLUMN,
+                            ("class", "BIGINT", "Class index the contribution is for."),
+                            ("feature", "VARCHAR", "Feature column name."),
+                            ("shap_value", "DOUBLE", "Contribution of the feature to the raw margin for this class."),
+                            ("base_value", "DOUBLE", "Model base (expected) raw-margin value for this class."),
+                        ],
+                    ),
+                ],
             ),
             "vgi.doc_llm": (
                 "Streams a table through a stored model and emits SHAP-style per-row prediction "
                 "contributions (XGBoost's `pred_contribs`) in long format: one row per (input row, "
                 "feature) with `feature`, `shap_value` (how much that feature pushed this row's raw margin "
                 "away from the model's base), and `base_value` (the expected margin). Identify the model "
-                "with `model_name :=` or `model :=` (a BLOB); name an `id :=` to tag every emitted row. "
+                "with `model_name :=` or `model :=` (a `BLOB`); name an `id :=` to tag every emitted row. "
                 "For multiclass models an extra `class` column appears (one row per (row, class, "
                 "feature)). Sum `shap_value` over a row's features and add `base_value` to recover the raw "
                 "margin. Use it for local, per-prediction explanations."
@@ -225,15 +249,16 @@ class ExplainModel(TableInOutGenerator[ExplainArgs]):
                 "**SHAP explanations** — per-row feature contributions, long format.\n\n"
                 "- Identify the model with `model_name :=` or `model :=`; optional `id :=` passthrough\n"
                 "- One row per (input row, feature): `feature`, `shap_value`, `base_value`\n"
-                "- Multiclass adds a `class` BIGINT column (one row per (row, class, feature))\n\n"
+                "- Multiclass adds a `class` `BIGINT` column (one row per (row, class, feature))\n\n"
                 "`sum(shap_value) + base_value` = the row's raw margin. Local, per-prediction explanation."
             ),
         }
         examples = [
             FunctionExample(
                 sql=(
-                    "SELECT * FROM xgboost.explain((SELECT * FROM xgboost.diabetes()), "
-                    "model_name => 'diab_reg', id => 'sample_id')"
+                    "SELECT feature, round(avg(abs(shap_value)), 3) AS mean_abs_shap "
+                    "FROM xgboost.main.explain((SELECT * FROM xgboost.main.diabetes()), "
+                    "model_name => 'diab_reg', id => 'sample_id') GROUP BY feature ORDER BY mean_abs_shap DESC"
                 ),
                 description="Explain each row's prediction with per-feature contributions",
             )
@@ -372,7 +397,7 @@ class PermutationImportance(SinkBuffer[PermImportanceArgs, DrainState]):
         description = "Model-agnostic feature importance: the drop in score when each feature is shuffled"
         categories = ["models", "interpretation", "evaluation"]
         tags = {
-            "vgi.result_columns_md": columns_md(_PERM_SCHEMA),
+            "vgi.result_columns_schema": result_columns_schema(_PERM_SCHEMA),
             "vgi.doc_llm": (
                 "Computes model-agnostic permutation importance over an evaluation table: for each "
                 "feature, shuffle its values `n_repeats :=` times and measure the resulting drop in the "
@@ -394,8 +419,8 @@ class PermutationImportance(SinkBuffer[PermImportanceArgs, DrainState]):
         examples = [
             FunctionExample(
                 sql=(
-                    "SELECT * FROM xgboost.permutation_importance("
-                    "(SELECT * EXCLUDE (target_name) FROM xgboost.iris()), "
+                    "SELECT feature, importance_mean, rank FROM xgboost.main.permutation_importance("
+                    "(SELECT * EXCLUDE (target_name) FROM xgboost.main.iris()), "
                     "model_name := 'iris_clf', target := 'target') ORDER BY importance_mean DESC"
                 ),
                 description="Rank iris features by permutation importance for a stored model",
@@ -514,7 +539,7 @@ class PartialDependence(SinkBuffer[PartialDependenceArgs, DrainState]):
         description = "How a stored model's average prediction changes as one feature varies over a grid"
         categories = ["models", "inspection"]
         tags = {
-            "vgi.result_columns_md": columns_md(_PD_SCHEMA),
+            "vgi.result_columns_schema": result_columns_schema(_PD_SCHEMA),
             "vgi.doc_llm": (
                 "Computes the partial-dependence curve for one numeric feature: sweeps `feature :=` over a "
                 "grid of `grid_resolution :=` points and reports the model's average prediction at each "
@@ -536,7 +561,8 @@ class PartialDependence(SinkBuffer[PartialDependenceArgs, DrainState]):
         examples = [
             FunctionExample(
                 sql=(
-                    "SELECT * FROM xgboost.partial_dependence((SELECT * FROM xgboost.iris()), "
+                    "SELECT class, feature_value, partial_dependence "
+                    "FROM xgboost.main.partial_dependence((SELECT * FROM xgboost.main.iris()), "
                     "model_name := 'iris_clf', feature := 'petal_length_cm') ORDER BY feature_value"
                 ),
                 description="Partial dependence of 'iris_clf' on petal length",

@@ -6,6 +6,7 @@ dataset/model function exposes consistent, documented schemas to DuckDB.
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 
@@ -42,6 +43,8 @@ def _sql_type(t: pa.DataType) -> str:
         return "SMALLINT"
     if pa.types.is_int8(t):
         return "TINYINT"
+    if pa.types.is_dictionary(t):
+        return _sql_type(t.value_type)
     if pa.types.is_float64(t):
         return "DOUBLE"
     if pa.types.is_float32(t):
@@ -57,31 +60,38 @@ def _sql_type(t: pa.DataType) -> str:
     return str(t)
 
 
-def columns_md(schema: pa.Schema, *, note: str | None = None) -> str:
-    """Render a Markdown table of a table function's RETURN columns for the
-    ``vgi.result_columns_md`` tag. DuckDB cannot expose a VGI table-function
-    schema, so this documents it. Reads each field's ``comment`` metadata."""
-    lines = ["| Column | Type | Description |", "| --- | --- | --- |"]
+def result_columns_schema(schema: pa.Schema) -> str:
+    """Render a table function's static result shape as ``vgi.result_columns_schema``.
+
+    DuckDB cannot expose a VGI table function's schema up front, so this
+    declares it: a JSON array of ``{name, type, description}`` objects, one per
+    returned column, read from each field's ``comment`` metadata.
+    """
+    cols = []
     for f in schema:
         desc = ""
         if f.metadata and b"comment" in f.metadata:
             desc = f.metadata[b"comment"].decode("utf-8")
-        lines.append(f"| `{f.name}` | {_sql_type(f.type)} | {desc} |")
-    md = "\n".join(lines)
-    if note:
-        md += f"\n\n{note}"
-    return md
+        cols.append({"name": f.name, "type": _sql_type(f.type), "description": desc})
+    return json.dumps(cols)
 
 
-def columns_md_rows(rows: list[tuple[str, str, str]], *, note: str | None = None) -> str:
-    """Same Markdown table, from explicit (column, type, description) rows --
-    for functions whose output schema is computed dynamically at bind."""
-    lines = ["| Column | Type | Description |", "| --- | --- | --- |"]
-    lines += [f"| `{n}` | {t} | {d} |" for n, t, d in rows]
-    md = "\n".join(lines)
-    if note:
-        md += f"\n\n{note}"
-    return md
+Variant = tuple[str, list[tuple[str, str, str]]]
+
+
+def result_dynamic_columns_md(intro: str, variants: list[Variant]) -> str:
+    """Render ``vgi.result_dynamic_columns_md`` for an argument-dependent result.
+
+    ``intro`` explains how the shape varies; each variant is a heading (when it
+    applies) plus its ``(name, type, description)`` rows, rendered as a
+    ``Name | Type | Description`` table.
+    """
+    parts = [intro]
+    for heading, rows in variants:
+        lines = [f"### {heading}", "", "| Name | Type | Description |", "| --- | --- | --- |"]
+        lines += [f"| {n} | {t} | {d} |" for n, t, d in rows]
+        parts.append("\n".join(lines))
+    return "\n\n".join(parts)
 
 
 _NON_IDENT = re.compile(r"[^0-9a-z]+")
@@ -118,3 +128,8 @@ def dedupe_names(names: list[str]) -> list[str]:
 @dataclass(slots=True, frozen=True, kw_only=True)
 class NoArgs:
     """Empty argument set for functions that take no user-facing parameters."""
+
+
+# The id column a streaming function carries through when ``id :=`` names one,
+# shown in its result-variant tables as the common ``id := 'sample_id'`` case.
+ID_COLUMN = ("sample_id", "BIGINT", "Column named by `id :=` (here `sample_id`), carried through first as-is.")

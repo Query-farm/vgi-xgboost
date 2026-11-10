@@ -60,7 +60,7 @@ jobs:
       #      (predict etc.) are scoped out via [tool.vgi-lint-check.per_object] in
       #      pyproject.
       - name: Lint worker metadata (static)
-        uses: Query-farm/vgi-lint-check@v1
+        uses: Query-farm/vgi-lint-check@v2
         with:
           # vgi-lint spawns this as a subprocess. Point at the venv interpreter
           # by path (not bare `python`): the action runs vgi-lint under uvx,
@@ -70,7 +70,7 @@ jobs:
           execute: false
           fail-on: warning
       - name: Lint worker examples (execute)
-        uses: Query-farm/vgi-lint-check@v1
+        uses: Query-farm/vgi-lint-check@v2
         with:
           location: .venv/bin/python xgboost_worker.py
           execute: true

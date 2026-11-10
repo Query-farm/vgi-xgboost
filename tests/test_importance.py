@@ -60,7 +60,7 @@ class TestFeatureImportance:
 
     def test_invalid_importance_type(self, registry) -> None:
         _save_model(registry)
-        with pytest.raises(ValueError, match="invalid importance_type"):
+        with pytest.raises(ValueError, match="importance_type' has an invalid value"):
             invoke_table_function(
                 FeatureImportance,
                 positional=(pa.scalar("m"),),

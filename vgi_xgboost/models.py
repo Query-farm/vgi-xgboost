@@ -59,7 +59,7 @@ from .registry import (
     unpack_model,
     validate_name,
 )
-from .schema_utils import columns_md, columns_md_rows
+from .schema_utils import ID_COLUMN, result_columns_schema, result_dynamic_columns_md
 from .schema_utils import field as sfield
 
 CLASSIFICATION = "classification"
@@ -216,7 +216,7 @@ _FIT_SCHEMA = pa.schema(
         sfield("train_score", pa.float64(), "In-sample score (accuracy or R^2)."),
         sfield("features", pa.list_(pa.string()), "Ordered feature column names.", nullable=False),
         sfield(
-            "model", pa.binary(), "The fitted model as a self-contained BLOB (estimator + metadata).", nullable=False
+            "model", pa.binary(), "The fitted model as a self-contained `BLOB` (estimator + metadata).", nullable=False
         ),
     ]
 )
@@ -292,25 +292,25 @@ class FitModel(SinkBuffer[FitArgs, DrainState]):
         description = "Fit an XGBoost estimator and store it in the model registry"
         categories = ["models", "supervised"]
         tags = {
-            "vgi.result_columns_md": columns_md(_FIT_SCHEMA),
+            "vgi.result_columns_schema": result_columns_schema(_FIT_SCHEMA),
             "vgi.doc_llm": (
                 "Buffers a training table, fits an XGBoost estimator (`estimator :=` one of "
                 "`xgb_classifier`, `xgb_regressor`, `xgb_rf_classifier`, `xgb_rf_regressor`), and returns a "
-                "one-row training summary whose `model` column is a self-contained BLOB (estimator + "
+                "one-row training summary whose `model` column is a self-contained `BLOB` (estimator + "
                 "metadata). Name the label column with `target :=`; every other column except an optional "
                 "`id :=` passthrough becomes a feature (strings/missing values handled natively). "
                 "Hyperparameters go in a JSON `params :=` string. Pass `model_name :=` to also persist the "
-                "model to the registry; otherwise it lives only in the returned BLOB. Feed that BLOB to "
+                "model to the registry; otherwise it lives only in the returned `BLOB`. Feed that `BLOB` to "
                 "`predict`/`explain`/`feature_importance` via `SET VARIABLE` + `getvariable()`."
             ),
             "vgi.doc_md": (
-                "**Fit an XGBoost model** — train and return a reusable model BLOB.\n\n"
+                "**Fit an XGBoost model** — train and return a reusable model `BLOB`.\n\n"
                 "- Input: a training table `(SELECT ...)`; name the label with `target :=`, optionally an "
                 "`id :=` passthrough\n"
                 "- `estimator :=` `xgb_classifier` | `xgb_regressor` | `xgb_rf_classifier` | "
                 "`xgb_rf_regressor`; hyperparameters via JSON `params :=`\n"
                 "- Returns one row: `estimator`, `task`, `n_samples`/`n_features`/`n_classes`, "
-                "`train_score`, `features`, and the `model` BLOB\n"
+                "`train_score`, `features`, and the `model` `BLOB`\n"
                 "- `model_name :=` also persists to the registry; classification labels may be any dtype "
                 "(string/int/bool) and are decoded back on predict"
             ),
@@ -318,9 +318,9 @@ class FitModel(SinkBuffer[FitArgs, DrainState]):
         examples = [
             FunctionExample(
                 sql=(
-                    "SELECT * FROM xgboost.fit("
+                    "SELECT model_name, task, n_samples, n_features, train_score FROM xgboost.main.fit("
                     "(SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target "
-                    "FROM xgboost.iris()), model_name => 'iris_clf', "
+                    "FROM xgboost.main.iris()), model_name => 'iris_clf', "
                     "estimator => 'xgb_classifier', target => 'target', id => 'sample_id')"
                 ),
                 description="Train an XGBoost classifier on iris and store it as 'iris_clf'",
@@ -420,20 +420,46 @@ class PredictModel(TableInOutGenerator[PredictArgs]):
         description = "Score a table through a stored model, emitting predictions"
         categories = ["models", "supervised", "inference"]
         tags = {
-            "vgi.result_columns_md": columns_md_rows(
-                [
-                    ("prediction", "BIGINT or DOUBLE", "Predicted class label (classification) or value (regression)."),
-                ],
-                note=(
-                    "If an `id` column is named, it is carried through as the first column. The middle column "
-                    "varies with the prediction mode: default is `prediction`; `output_margin := true` emits a "
-                    "`margin` DOUBLE; `pred_leaf := true` emits a `leaf` INTEGER[] (one leaf index per tree). "
-                    "With `with_proba := true` on a classifier, one `proba_<class>` DOUBLE column is added per class."
+            "vgi.result_dynamic_columns_md": result_dynamic_columns_md(
+                (
+                    "If `id :=` names a column it is carried through first. The prediction column depends on "
+                    "the model task and on the prediction mode; `with_proba := true` on a classifier adds "
+                    "one `proba_<class>` `DOUBLE` column per class."
                 ),
+                [
+                    (
+                        "Classifier (default)",
+                        [
+                            ID_COLUMN,
+                            ("prediction", "BIGINT", "Predicted class label (`VARCHAR` for string labels)."),
+                        ],
+                    ),
+                    (
+                        "Regressor (default)",
+                        [
+                            ID_COLUMN,
+                            ("prediction", "DOUBLE", "Predicted value."),
+                        ],
+                    ),
+                    (
+                        "output_margin := true",
+                        [
+                            ID_COLUMN,
+                            ("margin", "DOUBLE", "Raw (untransformed) margin score."),
+                        ],
+                    ),
+                    (
+                        "pred_leaf := true",
+                        [
+                            ID_COLUMN,
+                            ("leaf", "INTEGER[]", "Leaf index reached in each tree, one element per tree."),
+                        ],
+                    ),
+                ],
             ),
             "vgi.doc_llm": (
                 "Streams a table through an already-fit XGBoost model and emits its predictions. Identify "
-                "the model with either `model_name :=` (a registry name) or `model :=` (a BLOB from `fit`, "
+                "the model with either `model_name :=` (a registry name) or `model :=` (a `BLOB` from `fit`, "
                 "passed via `SET VARIABLE` + `getvariable()` since a table function has only one subquery "
                 "slot). Features are matched by name (order-independent; extra columns ignored; missing "
                 "ones error at bind). The default output is the decoded `prediction` (the original label "
@@ -443,18 +469,18 @@ class PredictModel(TableInOutGenerator[PredictArgs]):
             ),
             "vgi.doc_md": (
                 "**Predict with a stored model** — score a table row by row.\n\n"
-                "- Identify the model with `model_name :=` *or* `model :=` (a `fit` BLOB)\n"
+                "- Identify the model with `model_name :=` *or* `model :=` (a `fit` `BLOB`)\n"
                 "- Features aligned by name; an optional `id :=` is carried through\n"
                 "- Default output: `prediction` (label or value)\n"
                 "- `with_proba := true` → one `proba_<class>` column per class; `output_margin := true` → "
-                "a `margin` DOUBLE; `pred_leaf := true` → a `leaf` INTEGER[] (one index per tree) — the "
+                "a `margin` `DOUBLE`; `pred_leaf := true` → a `leaf` `INTEGER[]` (one index per tree) — the "
                 "three modes are mutually exclusive"
             ),
         }
         examples = [
             FunctionExample(
                 sql=(
-                    "SELECT * FROM xgboost.predict((SELECT * FROM xgboost.iris()), "
+                    "SELECT sample_id, prediction FROM xgboost.main.predict((SELECT * FROM xgboost.main.iris()), "
                     "model_name => 'iris_clf', id => 'sample_id')"
                 ),
                 description="Predict with the stored 'iris_clf' model",
@@ -602,15 +628,27 @@ class CrossValPredict(SinkBuffer[CrossValArgs, DrainState]):
         description = "Out-of-fold cross-validated predictions (no model is stored)"
         categories = ["models", "supervised", "evaluation"]
         tags = {
-            "vgi.result_columns_md": columns_md_rows(
+            "vgi.result_dynamic_columns_md": result_dynamic_columns_md(
+                (
+                    "If `id :=` names a column it is carried through first; the prediction type follows the "
+                    "estimator task."
+                ),
                 [
                     (
-                        "prediction",
-                        "BIGINT or DOUBLE",
-                        "Out-of-fold predicted class label (classification) or value (regression).",
+                        "Classifier",
+                        [
+                            ID_COLUMN,
+                            ("prediction", "BIGINT", "Out-of-fold class label (`VARCHAR` for string labels)."),
+                        ],
+                    ),
+                    (
+                        "Regressor",
+                        [
+                            ID_COLUMN,
+                            ("prediction", "DOUBLE", "Out-of-fold predicted value."),
+                        ],
                     ),
                 ],
-                note="If an `id` column is named, it is carried through as the first column.",
             ),
             "vgi.doc_llm": (
                 "Computes out-of-fold cross-validated predictions for a training table without persisting "
@@ -632,9 +670,9 @@ class CrossValPredict(SinkBuffer[CrossValArgs, DrainState]):
         examples = [
             FunctionExample(
                 sql=(
-                    "SELECT * FROM xgboost.cross_val_predict("
+                    "SELECT sample_id, prediction FROM xgboost.main.cross_val_predict("
                     "(SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target "
-                    "FROM xgboost.iris()), estimator => 'xgb_classifier', target => 'target', id => 'sample_id')"
+                    "FROM xgboost.main.iris()), estimator => 'xgb_classifier', target => 'target', id => 'sample_id')"
                 ),
                 description="5-fold out-of-fold predictions on iris",
             )
@@ -739,7 +777,7 @@ class CrossValScore(SinkBuffer[CrossValScoreArgs, DrainState]):
         description = "Cross-validated held-out scores, one row per fold (no model is stored)"
         categories = ["models", "supervised", "evaluation"]
         tags = {
-            "vgi.result_columns_md": columns_md(_CV_SCORE_SCHEMA),
+            "vgi.result_columns_schema": result_columns_schema(_CV_SCORE_SCHEMA),
             "vgi.doc_llm": (
                 "Runs k-fold cross-validation and returns the held-out score for each fold (one `(fold, "
                 "score)` row), without storing any model. Name the label with `target :=`, choose the "
@@ -759,9 +797,9 @@ class CrossValScore(SinkBuffer[CrossValScoreArgs, DrainState]):
         examples = [
             FunctionExample(
                 sql=(
-                    "SELECT fold, score FROM xgboost.cross_val_score("
+                    "SELECT fold, score FROM xgboost.main.cross_val_score("
                     "(SELECT sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target "
-                    "FROM xgboost.iris()), estimator => 'xgb_classifier', target => 'target')"
+                    "FROM xgboost.main.iris()), estimator => 'xgb_classifier', target => 'target')"
                 ),
                 description="5-fold accuracy of an XGBoost classifier on iris",
             )
@@ -869,7 +907,7 @@ class ListModels(TableFunctionGenerator[NoArgs]):
         description = "List all models in the registry"
         categories = ["models", "registry"]
         tags = {
-            "vgi.result_columns_md": columns_md(_MODEL_INFO_SCHEMA),
+            "vgi.result_columns_schema": result_columns_schema(_MODEL_INFO_SCHEMA),
             "vgi.doc_llm": (
                 "Zero-argument table function listing every model persisted to the registry (by `fit` / "
                 "`fit_<estimator>` / search with a `model_name`). One row per model: `model_name`, "
@@ -885,7 +923,12 @@ class ListModels(TableFunctionGenerator[NoArgs]):
                 "Takes no arguments. Use it to find models to score with `predict`."
             ),
         }
-        examples = [FunctionExample(sql="SELECT * FROM xgboost.list_models()", description="List stored models")]
+        examples = [
+            FunctionExample(
+                sql="SELECT model_name, estimator, train_score FROM xgboost.main.list_models() ORDER BY model_name",
+                description="Stored models with their estimator and training score",
+            )
+        ]
 
     @classmethod
     def cardinality(cls, params: BindParams[NoArgs]) -> TableCardinality:
@@ -912,7 +955,7 @@ class ModelInfo(TableFunctionGenerator[ModelInfoArgs]):
         description = "Describe a single stored model (one row, empty if absent)"
         categories = ["models", "registry"]
         tags = {
-            "vgi.result_columns_md": columns_md(_MODEL_INFO_SCHEMA),
+            "vgi.result_columns_schema": result_columns_schema(_MODEL_INFO_SCHEMA),
             "vgi.doc_llm": (
                 "Returns the registry metadata for one model named positionally (`model_info('my_model')`): "
                 "a single row with `model_name`, `estimator`, `task`, `target`, training shape "
@@ -929,7 +972,10 @@ class ModelInfo(TableFunctionGenerator[ModelInfoArgs]):
             ),
         }
         examples = [
-            FunctionExample(sql="SELECT * FROM xgboost.model_info('iris_clf')", description="Show one model's metadata")
+            FunctionExample(
+                sql="SELECT estimator, task, target, n_features, train_score FROM xgboost.main.model_info('iris_clf')",
+                description="Show one stored model's training metadata",
+            )
         ]
 
     @classmethod
@@ -969,7 +1015,7 @@ class DropModel(TableFunctionGenerator[DropModelArgs]):
         description = "Delete a model from the registry"
         categories = ["models", "registry"]
         tags = {
-            "vgi.result_columns_md": columns_md(_DROP_SCHEMA),
+            "vgi.result_columns_schema": result_columns_schema(_DROP_SCHEMA),
             "vgi.doc_llm": (
                 "Deletes a model from the registry by name (`drop_model('my_model')`) and returns one row "
                 "`(model_name, dropped)` where `dropped` is true when a model was removed and false when "
@@ -984,7 +1030,10 @@ class DropModel(TableFunctionGenerator[DropModelArgs]):
             ),
         }
         examples = [
-            FunctionExample(sql="SELECT * FROM xgboost.drop_model('iris_clf')", description="Delete a stored model")
+            FunctionExample(
+                sql="SELECT model_name, dropped FROM xgboost.main.drop_model('iris_clf')",
+                description="Delete a stored model and report whether it existed",
+            )
         ]
 
     @classmethod

@@ -69,7 +69,7 @@ _CATALOG_COMMENT = "XGBoost train/predict model registry, datasets, and interpre
 # Catalog-level description: the high-level "what this worker is".
 _CATALOG_DESCRIPTION_LLM = (
     "XGBoost for SQL. Load datasets; fit gradient-boosted models (fit returns a "
-    "model BLOB, predict aligns features by name and decodes string labels); run "
+    "model `BLOB`, predict aligns features by name and decodes string labels); run "
     "typed fit_<estimator>, grid and randomized hyperparameter search, feature "
     "importance, SHAP explanations, partial dependence, and permutation importance "
     "— all as DuckDB table functions."
@@ -87,7 +87,7 @@ _CATALOG_DESCRIPTION_MD = (
 # Schema-level description: an index of what is callable in the `main` namespace.
 _SCHEMA_DESCRIPTION_LLM = (
     "Functions in xgboost.main, by family: datasets (table functions); models "
-    "(fit → model BLOB → predict, typed fit_<estimator>, cross-validation, grid and "
+    "(fit → model `BLOB` → predict, typed fit_<estimator>, cross-validation, grid and "
     "randomized search); and interpretation (feature importance, SHAP explain, "
     "partial dependence, permutation importance). All are DuckDB table functions."
 )
@@ -99,7 +99,7 @@ _SCHEMA_DESCRIPTION_MD = (
     "grid/randomized search\n"
     "- **interpretation** — feature importance, SHAP `explain`, partial dependence, "
     "permutation importance\n\n"
-    "Fit returns a reusable model BLOB; predict aligns features by name."
+    "Fit returns a reusable model `BLOB`; predict aligns features by name."
 )
 # Guaranteed-runnable, self-contained examples advertised on the catalog
 # (VGI509): each is fully schema-qualified and executes as written against a
@@ -148,16 +148,13 @@ _CATALOG_EXECUTABLE_EXAMPLES = json.dumps(
         },
     ]
 )
-# Fixed agent-suitability suite run by `vgi-lint simulate`. Each task's `prompt`
-# is shown to the simulated analyst; the hidden `reference_sql` is the canonical
-# solution, re-run to grade by deterministic result comparison (training here is
-# reproducible, so exact values match across runs). Prompts name their output
+# Fixed agent-suitability suite run by `vgi-lint simulate`. Only each task's
+# name and the `prompt` shown to the simulated analyst are published here; the
+# hidden graders (`reference_sql`) live in vgi-agent-tests.yaml in the repo
+# (VGI416), so the catalog never leaks the answers. Prompts name their output
 # columns because grading is strict on column names + values + order. The suite
-# mixes two single-call smoke tests with two multi-step tasks that exercise the
-# worker's real workflow — fit -> model BLOB in a session variable -> predict /
-# interpret, plus a join back to the data — so a pass means an agent can compose
-# the API, not just call one function. The reference_sql doubles as curated
-# few-shot guidance an MCP server can surface.
+# mixes single-call smoke tests with multi-step tasks that exercise the real
+# workflow — fit -> model BLOB in a session variable -> predict / interpret.
 _CATALOG_AGENT_TEST_TASKS = json.dumps(
     [
         {
@@ -167,30 +164,18 @@ _CATALOG_AGENT_TEST_TASKS = json.dumps(
                 "accurately gradient boosting distinguishes malignant from benign breast tumors "
                 "on unseen data. Using the built-in Wisconsin breast-cancer dataset and all 30 "
                 "cell-nucleus features, run 5-fold cross-validation with an XGBoost classifier "
-                "and report the mean held-out accuracy across the folds. Return a single row "
-                "with one column named mean_cv_accuracy."
-            ),
-            "reference_sql": (
-                "SELECT avg(score) AS mean_cv_accuracy FROM xgboost.main.cross_val_score("
-                "(SELECT * EXCLUDE (sample_id, target_name) FROM xgboost.main.breast_cancer), "
-                "estimator := 'xgb_classifier', target := 'target', cv := 5)"
+                "and report the mean held-out accuracy across the folds. Return a single row with"
+                " one column named mean_cv_accuracy."
             ),
         },
         {
             "name": "iris_grid_search_best_accuracy",
             "prompt": (
-                "I'm tuning an XGBoost classifier on Fisher's iris dataset. Run a 5-fold "
-                "cross-validated grid search over n_estimators (30, 60, 90) and max_depth "
-                "(2, 4, 6), and report the best mean cross-validated accuracy across all those "
+                "I'm tuning an XGBoost classifier on Fisher's iris dataset. Run a 5-fold cross-"
+                "validated grid search over n_estimators (30, 60, 90) and max_depth (2, 4, 6), "
+                "and report the best mean cross-validated accuracy across all those "
                 "hyperparameter combinations. Return a single row with one column named "
                 "best_cv_accuracy."
-            ),
-            "reference_sql": (
-                "SELECT max(mean_test_score) AS best_cv_accuracy FROM xgboost.main.grid_search("
-                "(SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, "
-                "petal_width_cm, target FROM xgboost.main.iris), target := 'target', "
-                "id := 'sample_id', cv := 5, estimator := union_value(xgb_classifier := "
-                "{'n_estimators': [30, 60, 90], 'max_depth': [2, 4, 6]}))"
             ),
         },
         {
@@ -203,42 +188,22 @@ _CATALOG_AGENT_TEST_TASKS = json.dumps(
                 "to the data by sample_id. Round to 2 decimals and return a single row with one "
                 "column named train_rmse."
             ),
-            "reference_sql": [
-                "SET VARIABLE diab_model = (SELECT model FROM xgboost.main.fit("
-                "(SELECT * FROM xgboost.main.diabetes), estimator := 'xgb_regressor', "
-                "target := 'target', id := 'sample_id'))",
-                "SELECT round(sqrt(avg((p.prediction - d.target) * (p.prediction - d.target))), 2) "
-                "AS train_rmse FROM xgboost.main.predict((SELECT * FROM xgboost.main.diabetes), "
-                "model := getvariable('diab_model'), id := 'sample_id') p "
-                "JOIN xgboost.main.diabetes d USING (sample_id)",
-            ],
         },
         {
             "name": "n_features_above_mean_gain",
             "prompt": (
                 "Train a gradient-boosted regressor on the diabetes dataset, compute gain-based "
-                "feature importances, and count how many features have a gain importance strictly "
-                "greater than the mean gain importance across all features. Return a single row "
+                "feature importances, and count how many features have a gain importance strictly"
+                " greater than the mean gain importance across all features. Return a single row "
                 "with one column named n_above_mean."
             ),
-            "reference_sql": [
-                "SET VARIABLE diab_gain_model = (SELECT model FROM xgboost.main.fit("
-                "(SELECT * FROM xgboost.main.diabetes), estimator := 'xgb_regressor', "
-                "target := 'target', id := 'sample_id'))",
-                "WITH fi AS (SELECT feature, importance FROM xgboost.main.feature_importance('', "
-                "model := getvariable('diab_gain_model'), importance_type := 'gain')) "
-                "SELECT count(*) AS n_above_mean FROM fi "
-                "WHERE importance > (SELECT avg(importance) FROM fi)",
-            ],
         },
-        # --- dataset table functions ---
         {
             "name": "wine_sample_count",
             "prompt": (
                 "How many samples are in the built-in wine recognition dataset? Return a single "
                 "row with one column named n."
             ),
-            "reference_sql": "SELECT count(*) AS n FROM xgboost.main.wine",
         },
         {
             "name": "california_housing_count",
@@ -246,7 +211,6 @@ _CATALOG_AGENT_TEST_TASKS = json.dumps(
                 "How many districts are in the built-in California housing dataset? Return a "
                 "single row with one column named n."
             ),
-            "reference_sql": "SELECT count(*) AS n FROM xgboost.main.california_housing",
         },
         {
             "name": "make_classification_rows",
@@ -255,10 +219,6 @@ _CATALOG_AGENT_TEST_TASKS = json.dumps(
                 "random_state 42, then report how many rows it has. Return a single row with one "
                 "column named n."
             ),
-            "reference_sql": (
-                "SELECT count(*) AS n FROM xgboost.main.make_classification("
-                "n_samples := 120, n_classes := 3, random_state := 42)"
-            ),
         },
         {
             "name": "make_regression_rows",
@@ -266,23 +226,14 @@ _CATALOG_AGENT_TEST_TASKS = json.dumps(
                 "Generate a synthetic regression dataset with 90 samples and random_state 42, "
                 "then report how many rows it has. Return a single row with one column named n."
             ),
-            "reference_sql": (
-                "SELECT count(*) AS n FROM xgboost.main.make_regression("
-                "n_samples := 90, random_state := 42)"
-            ),
         },
-        # --- typed fit_<estimator> functions (training summary) ---
         {
             "name": "fit_xgb_classifier_summary",
             "prompt": (
                 "Using the typed classifier fitter, train an XGBoost classifier on the iris "
                 "dataset (target column 'target', id column 'sample_id') and report the training "
-                "summary's sample and feature counts. Return one row with columns named n_samples "
-                "and n_features."
-            ),
-            "reference_sql": (
-                "SELECT n_samples, n_features FROM xgboost.main.fit_xgb_classifier("
-                "(SELECT * FROM xgboost.main.iris), target := 'target', id := 'sample_id')"
+                "summary's sample and feature counts. Return one row with columns named n_samples"
+                " and n_features."
             ),
         },
         {
@@ -290,12 +241,8 @@ _CATALOG_AGENT_TEST_TASKS = json.dumps(
             "prompt": (
                 "Using the typed regressor fitter, train an XGBoost regressor on the diabetes "
                 "dataset (target column 'target', id column 'sample_id') and report the training "
-                "summary's sample and feature counts. Return one row with columns named n_samples "
-                "and n_features."
-            ),
-            "reference_sql": (
-                "SELECT n_samples, n_features FROM xgboost.main.fit_xgb_regressor("
-                "(SELECT * FROM xgboost.main.diabetes), target := 'target', id := 'sample_id')"
+                "summary's sample and feature counts. Return one row with columns named n_samples"
+                " and n_features."
             ),
         },
         {
@@ -303,28 +250,19 @@ _CATALOG_AGENT_TEST_TASKS = json.dumps(
             "prompt": (
                 "Using the typed random-forest classifier fitter, train an XGBoost RF classifier "
                 "on the iris dataset (target 'target', id 'sample_id') and report the training "
-                "summary's sample and feature counts. Return one row with columns named n_samples "
-                "and n_features."
-            ),
-            "reference_sql": (
-                "SELECT n_samples, n_features FROM xgboost.main.fit_xgb_rf_classifier("
-                "(SELECT * FROM xgboost.main.iris), target := 'target', id := 'sample_id')"
+                "summary's sample and feature counts. Return one row with columns named n_samples"
+                " and n_features."
             ),
         },
         {
             "name": "fit_xgb_rf_regressor_summary",
             "prompt": (
-                "Using the typed random-forest regressor fitter, train an XGBoost RF regressor on "
-                "the diabetes dataset (target 'target', id 'sample_id') and report the training "
-                "summary's sample and feature counts. Return one row with columns named n_samples "
-                "and n_features."
-            ),
-            "reference_sql": (
-                "SELECT n_samples, n_features FROM xgboost.main.fit_xgb_rf_regressor("
-                "(SELECT * FROM xgboost.main.diabetes), target := 'target', id := 'sample_id')"
+                "Using the typed random-forest regressor fitter, train an XGBoost RF regressor on"
+                " the diabetes dataset (target 'target', id 'sample_id') and report the training "
+                "summary's sample and feature counts. Return one row with columns named n_samples"
+                " and n_features."
             ),
         },
-        # --- cross-validation, interpretation ---
         {
             "name": "cross_val_predict_accuracy",
             "prompt": (
@@ -333,48 +271,24 @@ _CATALOG_AGENT_TEST_TASKS = json.dumps(
                 "accuracy of those out-of-fold predictions against the true labels (join by "
                 "sample_id). Round to 4 decimals and return a single column named oof_accuracy."
             ),
-            "reference_sql": (
-                "SELECT round(avg((p.prediction = i.target)::INT), 4) AS oof_accuracy "
-                "FROM xgboost.main.cross_val_predict((SELECT * FROM xgboost.main.iris), "
-                "estimator := 'xgb_classifier', target := 'target', id := 'sample_id', cv := 5) p "
-                "JOIN xgboost.main.iris i USING (sample_id)"
-            ),
         },
         {
             "name": "shap_top_feature",
             "prompt": (
                 "Train an XGBoost regressor on the diabetes dataset, then use SHAP contributions "
                 "(via the explain function) to identify the single most influential feature "
-                "overall — the one with the largest mean absolute SHAP value. Return one row with "
-                "a column named feature."
+                "overall — the one with the largest mean absolute SHAP value. Return one row with"
+                " a column named feature."
             ),
-            "reference_sql": [
-                "SET VARIABLE shap_model = (SELECT model FROM xgboost.main.fit("
-                "(SELECT * FROM xgboost.main.diabetes), estimator := 'xgb_regressor', "
-                "target := 'target', id := 'sample_id'))",
-                "SELECT feature FROM xgboost.main.explain((SELECT * FROM xgboost.main.diabetes), "
-                "model := getvariable('shap_model'), id := 'sample_id') GROUP BY feature "
-                "ORDER BY avg(abs(shap_value)) DESC, feature LIMIT 1",
-            ],
         },
         {
             "name": "bmi_partial_dependence_range",
             "prompt": (
-                "Train an XGBoost regressor on the diabetes dataset, then compute a "
-                "partial-dependence curve for the 'bmi' feature over a 20-point grid, and report "
-                "the minimum and maximum predicted value along the curve, each rounded to 2 "
-                "decimals. Return one row with columns named min_pd and max_pd."
+                "Train an XGBoost regressor on the diabetes dataset, then compute a partial-"
+                "dependence curve for the 'bmi' feature over a 20-point grid, and report the "
+                "minimum and maximum predicted value along the curve, each rounded to 2 decimals."
+                " Return one row with columns named min_pd and max_pd."
             ),
-            "reference_sql": [
-                "SET VARIABLE pd_model = (SELECT model FROM xgboost.main.fit("
-                "(SELECT * FROM xgboost.main.diabetes), estimator := 'xgb_regressor', "
-                "target := 'target', id := 'sample_id'))",
-                "SELECT round(min(partial_dependence), 2) AS min_pd, "
-                "round(max(partial_dependence), 2) AS max_pd "
-                "FROM xgboost.main.partial_dependence((SELECT sample_id, age, sex, bmi, bp, s1, "
-                "s2, s3, s4, s5, s6 FROM xgboost.main.diabetes), model := getvariable('pd_model'), "
-                "feature := 'bmi', grid_resolution := 20)",
-            ],
         },
         {
             "name": "top_permutation_feature",
@@ -383,15 +297,54 @@ _CATALOG_AGENT_TEST_TASKS = json.dumps(
                 "importance (5 repeats, random_state 42) to find the single most important "
                 "feature by mean importance. Return one row with a column named feature."
             ),
-            "reference_sql": [
-                "SET VARIABLE perm_model = (SELECT model FROM xgboost.main.fit("
-                "(SELECT * FROM xgboost.main.diabetes), estimator := 'xgb_regressor', "
-                "target := 'target', id := 'sample_id'))",
-                "SELECT feature FROM xgboost.main.permutation_importance("
-                "(SELECT * FROM xgboost.main.diabetes), model := getvariable('perm_model'), "
-                "target := 'target', random_state := 42, n_repeats := 5) "
-                "ORDER BY importance_mean DESC LIMIT 1",
-            ],
+        },
+        {
+            "name": "fit_iris_train_accuracy",
+            "prompt": (
+                "Train an XGBoost classifier on the built-in iris dataset with the generic fit "
+                "function (estimator xgb_classifier, target column 'target', id column "
+                "'sample_id') and report its in-sample training accuracy rounded to 4 decimals. "
+                "Return a single row with one column named train_accuracy."
+            ),
+        },
+        {
+            "name": "saved_model_info",
+            "prompt": (
+                "Train an XGBoost classifier on the wine dataset (target 'target', id "
+                "'sample_id') and save it in the model registry under the name 'wine_clf'. Then "
+                "look that saved model up in the registry and report which target column it was "
+                "trained on and how many features it uses. Return one row with columns named "
+                "target and n_features."
+            ),
+        },
+        {
+            "name": "saved_model_listed",
+            "prompt": (
+                "Train an XGBoost regressor on the diabetes dataset (target 'target', id "
+                "'sample_id') and save it in the model registry as 'diab_saved'. Then list the "
+                "stored models and return the registry entry for that model only. Return one row "
+                "with columns named model_name, estimator and task."
+            ),
+        },
+        {
+            "name": "drop_saved_model",
+            "prompt": (
+                "Train an XGBoost classifier on iris (target 'target', id 'sample_id'), save it "
+                "in the model registry as 'scratch_clf', then delete it from the registry and "
+                "report whether a model was actually removed. Return one row with one column "
+                "named dropped."
+            ),
+        },
+        {
+            "name": "iris_randomized_search_best",
+            "prompt": (
+                "Tune an XGBoost classifier on the iris dataset with a randomized hyperparameter "
+                "search: sample 4 combinations (random seed 0) from n_estimators (25, 50, 100) "
+                "and max_depth (2, 3, 4), scoring each by 3-fold cross-validation, using only the"
+                " four measurement columns as features. Report the best mean cross-validated "
+                "accuracy, rounded to 4 decimals. Return a single row with one column named "
+                "best_cv_accuracy."
+            ),
         },
     ]
 )
@@ -403,7 +356,8 @@ _CATALOG_TAGS = {
     "vgi.license": "MIT",
     "vgi.support_contact": f"{SOURCE_URL}/issues",
     "vgi.support_policy_url": f"{SOURCE_URL}/blob/main/SUPPORT.md",
-    "vgi.title": "XGBoost for SQL",
+    "vgi.title": "XGBoost",
+    "vgi.subtitle": "Train, tune, score and explain gradient-boosted tree models on your tables with plain SQL.",
     "vgi.keywords": json.dumps(
         [
             "xgboost",
@@ -424,10 +378,36 @@ _CATALOG_TAGS = {
 
 # Per-schema metadata for the single `main` schema (VGI506/124/126): title,
 # keywords (JSON array), and a runnable, schema-qualified example query.
+# Navigation sections for the schema (VGI413); every function and table names
+# one of these in its ``vgi.category`` (see ``_apply_discovery_tags``).
+_CATEGORIES = [
+    {
+        "name": "datasets",
+        "title": "Datasets",
+        "description": "Built-in toy datasets and synthetic data generators to train on.",
+    },
+    {
+        "name": "models",
+        "title": "Models",
+        "description": "Fit, predict with, cross-validate and manage stored XGBoost models.",
+    },
+    {
+        "name": "tuning",
+        "title": "Hyperparameter search",
+        "description": "Cross-validated grid and randomized hyperparameter search.",
+    },
+    {
+        "name": "interpretation",
+        "title": "Interpretation",
+        "description": "Feature importance, SHAP contributions and partial dependence.",
+    },
+]
+
 _SCHEMA_TAGS = {
     "provider": "XGBoost",
     "domain": "machine-learning",
-    "vgi.title": "XGBoost",
+    "vgi.title": "XGBoost functions",
+    "vgi.categories": json.dumps(_CATEGORIES),
     "vgi.doc_llm": _SCHEMA_DESCRIPTION_LLM,
     "vgi.doc_md": _SCHEMA_DESCRIPTION_MD,
     "vgi.keywords": json.dumps(
@@ -460,6 +440,15 @@ def _humanize(name: str) -> str:
     return name.replace("_", " ").title()
 
 
+# The navigation category (a ``_CATEGORIES`` name) for each function family.
+_FAMILY: dict[type, str] = {
+    **dict.fromkeys(DATASET_FUNCTIONS, "datasets"),
+    **dict.fromkeys((*MODEL_FUNCTIONS, *TYPED_FIT_FUNCTIONS), "models"),
+    **dict.fromkeys(SEARCH_FUNCTIONS, "tuning"),
+    **dict.fromkeys(IMPORTANCE_FUNCTIONS, "interpretation"),
+}
+
+
 def _apply_discovery_tags(functions: list[type]) -> None:
     """Inject the per-function discovery tags the catalog-quality linter expects.
 
@@ -479,6 +468,7 @@ def _apply_discovery_tags(functions: list[type]) -> None:
         tags.setdefault("vgi.title", _humanize(name))
         keywords = list(dict.fromkeys(cats or name.split("_")))
         tags.setdefault("vgi.keywords", json.dumps(keywords))
+        tags.setdefault("vgi.category", _FAMILY[fn])
         meta.tags = tags
 
 
@@ -509,7 +499,7 @@ _TABLE_META: dict[str, dict[str, Any]] = {
             "Fisher's classic iris table: 150 rows, one per flower. Columns are `sample_id`, four numeric "
             "measurements in centimetres (`sepal_length_cm`, `sepal_width_cm`, `petal_length_cm`, "
             "`petal_width_cm`), an integer `target` (0/1/2), and the `target_name` species "
-            "(setosa/versicolor/virginica). Query it directly — `SELECT * FROM xgboost.main.iris` — for a "
+            "(setosa/versicolor/virginica). Read it as a plain table (no parentheses) for a "
             "balanced 3-class toy dataset to feed `fit`/`predict`."
         ),
         "doc_md": (
@@ -716,6 +706,7 @@ def _function_table(fn: type) -> Table:
             "provider": "XGBoost",
             "domain": "machine-learning",
             "vgi.title": tm["title"],
+            "vgi.category": _FAMILY[fn],
             "vgi.keywords": tm["keywords"],
             "vgi.doc_llm": tm["doc_llm"],
             "vgi.doc_md": tm["doc_md"],
