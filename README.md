@@ -242,3 +242,8 @@ suite, and a Docker build + `/health` smoke test on every push and PR.
 Dependabot (`.github/dependabot.yml`) keeps the Python deps, GitHub Actions, and
 the Docker base image up to date weekly.
 
+
+## Executable notebooks
+
+See [the SQL notebook](notebooks/README.md) for a synthetic held-out prediction workflow,
+SHAP reconstruction, charts and a portable pinned worker connection.
