@@ -8,6 +8,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 - Bumped the `vgi-python` floor to `>=0.8.2`.
+- Bumped the `vgi-python` floor (pyproject, Makefile, Dockerfile) and `uv.lock` to
+  `0.51.1`: `0.50.x` speaks VGI protocol 3.2 and fails ATTACH against the 3.3
+  community extension.
+
+### Added
+- Composed examples joining `cross_val_predict` out-of-fold predictions back to
+  `iris` (confusion matrix) and `diabetes` (held-out error per BMI quartile), plus
+  an out-of-fold agent test task on `breast_cancer`.
 
 ## [0.1.0] - 2026-06-22
 

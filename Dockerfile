@@ -49,7 +49,7 @@ RUN apt-get update \
 # vgi-python / vgi-rpc are published on PyPI, so install everything directly —
 # no vendoring or local wheel building required.
 RUN pip install \
-        "vgi-python[http,oauth]>=0.50.0" \
+        "vgi-python[http,oauth]>=0.51.1" \
         "vgi-rpc[sentry]>=0.53.1" \
         "xgboost>=2.0" \
         "scikit-learn>=1.5" \

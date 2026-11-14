@@ -628,7 +628,8 @@ CV_PREDICT_IRIS_CONFUSION_SQL = (
 CV_PREDICT_IRIS_CONFUSION_DESCRIPTION = (
     "Out-of-fold confusion matrix for an XGBoost iris classifier: 5-fold cross_val_predict on the species "
     "name, joined back to the iris table by sample_id and counted per (actual, predicted) species pair. "
-    "Only non-empty cells are returned; the off-diagonal rows are the versicolor/virginica mix-ups."
+    "Only non-empty cells are returned; the off-diagonal rows are the held-out misclassifications, "
+    "almost all of them versicolor/virginica mix-ups."
 )
 CV_PREDICT_DIABETES_BMI_ERROR_SQL = (
     "SELECT d.bmi_quartile, count(*) AS patients, "
