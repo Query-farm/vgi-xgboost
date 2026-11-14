@@ -610,6 +610,43 @@ class PredictModel(TableInOutGenerator[PredictArgs]):
 # ===========================================================================
 
 
+# Composed examples: out-of-fold predictions joined back to the dataset they
+# came from, so the held-out errors can be broken down by a column of the source
+# rows. Defined once here and referenced from cross_val_predict's own example
+# list, the schema-level example list and (the iris one) the catalog's
+# executable examples. Both are offline and deterministic (bundled datasets,
+# unshuffled k-fold, random_state 0).
+CV_PREDICT_IRIS_CONFUSION_SQL = (
+    "SELECT i.target_name AS actual_species, cv.prediction AS predicted_species, count(*) AS n_flowers "
+    "FROM xgboost.main.cross_val_predict("
+    "(SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target_name "
+    "FROM xgboost.main.iris), estimator := 'xgb_classifier', target := 'target_name', id := 'sample_id', "
+    "cv := 5) AS cv "
+    "JOIN xgboost.main.iris AS i USING (sample_id) "
+    "GROUP BY ALL ORDER BY actual_species, predicted_species"
+)
+CV_PREDICT_IRIS_CONFUSION_DESCRIPTION = (
+    "Out-of-fold confusion matrix for an XGBoost iris classifier: 5-fold cross_val_predict on the species "
+    "name, joined back to the iris table by sample_id and counted per (actual, predicted) species pair. "
+    "Only non-empty cells are returned; the off-diagonal rows are the versicolor/virginica mix-ups."
+)
+CV_PREDICT_DIABETES_BMI_ERROR_SQL = (
+    "SELECT d.bmi_quartile, count(*) AS patients, "
+    "round(avg(abs(cv.prediction - d.target)), 1) AS oof_mae, "
+    "round(avg(d.target), 1) AS mean_progression "
+    "FROM xgboost.main.cross_val_predict((SELECT * FROM xgboost.main.diabetes), "
+    "estimator := 'xgb_regressor', target := 'target', id := 'sample_id', cv := 5) AS cv "
+    "JOIN (SELECT sample_id, target, ntile(4) OVER (ORDER BY bmi, sample_id) AS bmi_quartile "
+    "FROM xgboost.main.diabetes) AS d USING (sample_id) "
+    "GROUP BY d.bmi_quartile ORDER BY d.bmi_quartile"
+)
+CV_PREDICT_DIABETES_BMI_ERROR_DESCRIPTION = (
+    "Where does an XGBoost regressor miss? 5-fold out-of-fold predictions on diabetes joined back to the "
+    "patients, with the held-out mean absolute error and mean progression score per BMI quartile "
+    "(1 = lowest BMI)."
+)
+
+
 @dataclass(slots=True, frozen=True)
 class CrossValArgs:
     data: Annotated[TableInput, Arg(0, doc="Training rows: features + target [+ id].")]
@@ -668,6 +705,10 @@ class CrossValPredict(SinkBuffer[CrossValArgs, DrainState]):
             ),
         }
         examples = [
+            FunctionExample(sql=CV_PREDICT_IRIS_CONFUSION_SQL, description=CV_PREDICT_IRIS_CONFUSION_DESCRIPTION),
+            FunctionExample(
+                sql=CV_PREDICT_DIABETES_BMI_ERROR_SQL, description=CV_PREDICT_DIABETES_BMI_ERROR_DESCRIPTION
+            ),
             FunctionExample(
                 sql=(
                     "SELECT sample_id, prediction FROM xgboost.main.cross_val_predict("
@@ -675,7 +716,7 @@ class CrossValPredict(SinkBuffer[CrossValArgs, DrainState]):
                     "FROM xgboost.main.iris()), estimator => 'xgb_classifier', target => 'target', id => 'sample_id')"
                 ),
                 description="5-fold out-of-fold predictions on iris",
-            )
+            ),
         ]
 
     @classmethod

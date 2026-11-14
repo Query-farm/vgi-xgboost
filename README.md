@@ -112,6 +112,15 @@ SELECT count(*) FROM xgboost.cross_val_predict(
 SELECT fold, score FROM xgboost.cross_val_score(
   (SELECT * FROM iris_xy), estimator := 'xgb_classifier', target := 'target', cv := 5);
 
+-- join the out-of-fold predictions back to the data: an iris confusion matrix
+-- (a string target is decoded back to species names)
+SELECT i.target_name AS actual_species, cv.prediction AS predicted_species, count(*) AS n_flowers
+FROM xgboost.cross_val_predict(
+  (SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target_name FROM xgboost.iris()),
+  estimator := 'xgb_classifier', target := 'target_name', id := 'sample_id', cv := 5) AS cv
+JOIN xgboost.iris() AS i USING (sample_id)
+GROUP BY ALL ORDER BY actual_species, predicted_species;
+
 SELECT * FROM xgboost.list_models();
 SELECT * FROM xgboost.drop_model('iris_clf');
 ```

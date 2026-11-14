@@ -95,3 +95,8 @@ tasks:
     sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target FROM xgboost.main.iris),
     target := ''target'', cv := 3, n_iter := 4, random_state := 0, estimator := union_value(xgb_classifier
     := {''n_estimators'': [25, 50, 100], ''max_depth'': [2, 3, 4]}))'
+- name: breast_cancer_oof_missed_malignant
+  reference_sql: SELECT count(*) AS n_missed_malignant FROM xgboost.main.cross_val_predict((SELECT * EXCLUDE
+    (target_name) FROM xgboost.main.breast_cancer), estimator := 'xgb_classifier', target := 'target',
+    id := 'sample_id', cv := 5) AS cv JOIN xgboost.main.breast_cancer AS b USING (sample_id) WHERE b.target
+    = 0 AND cv.prediction = 1

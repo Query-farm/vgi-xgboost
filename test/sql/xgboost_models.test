@@ -80,6 +80,25 @@ SELECT count(*) FROM xgboost.cross_val_predict((SELECT * FROM iris_xy),
 ----
 150
 
+# ---- composed: out-of-fold predictions joined back to iris (the confusion-matrix
+# example) — a string target decodes to species names, every flower is counted
+# once, and the held-out predictions are overwhelmingly on the diagonal ----
+
+query III
+SELECT sum(n_flowers), count(DISTINCT predicted_species),
+       (sum(n_flowers) FILTER (WHERE actual_species = predicted_species) >= 140)::INT
+FROM (
+  SELECT i.target_name AS actual_species, cv.prediction AS predicted_species, count(*) AS n_flowers
+  FROM xgboost.cross_val_predict(
+    (SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target_name
+     FROM xgboost.iris()),
+    estimator => 'xgb_classifier', target => 'target_name', id => 'sample_id', cv => 5) AS cv
+  JOIN xgboost.iris() AS i USING (sample_id)
+  GROUP BY ALL
+);
+----
+150	3	1
+
 # ---- a regression model fits and is tagged regression ----
 
 query I

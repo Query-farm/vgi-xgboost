@@ -37,7 +37,13 @@ from vgi.catalog.catalog_interface import CatalogAttachResult, CatalogInfo
 from vgi_xgboost import __version__
 from vgi_xgboost.datasets import DATASET_FUNCTIONS
 from vgi_xgboost.importance import IMPORTANCE_FUNCTIONS
-from vgi_xgboost.models import MODEL_FUNCTIONS
+from vgi_xgboost.models import (
+    CV_PREDICT_DIABETES_BMI_ERROR_DESCRIPTION,
+    CV_PREDICT_DIABETES_BMI_ERROR_SQL,
+    CV_PREDICT_IRIS_CONFUSION_DESCRIPTION,
+    CV_PREDICT_IRIS_CONFUSION_SQL,
+    MODEL_FUNCTIONS,
+)
 from vgi_xgboost.search import SEARCH_FUNCTIONS
 from vgi_xgboost.typed_models import TYPED_FIT_FUNCTIONS
 
@@ -146,6 +152,7 @@ _CATALOG_EXECUTABLE_EXAMPLES = json.dumps(
                 "ORDER BY rank"
             ),
         },
+        {"description": CV_PREDICT_IRIS_CONFUSION_DESCRIPTION, "sql": CV_PREDICT_IRIS_CONFUSION_SQL},
     ]
 )
 # Fixed agent-suitability suite run by `vgi-lint simulate`. Only each task's
@@ -346,6 +353,17 @@ _CATALOG_AGENT_TEST_TASKS = json.dumps(
                 "best_cv_accuracy."
             ),
         },
+        {
+            "name": "breast_cancer_oof_missed_malignant",
+            "prompt": (
+                "For a tumor-screening review I need to know how many cancers a gradient-boosted "
+                "model would have missed on data it never trained on. Using the built-in Wisconsin "
+                "breast-cancer dataset with its 30 cell-nucleus measurements as the features, get "
+                "5-fold out-of-fold predictions from an XGBoost classifier and count the malignant "
+                "tumours (target 0) that were predicted benign (target 1). Return a single row with "
+                "one BIGINT column named n_missed_malignant."
+            ),
+        },
     ]
 )
 _CATALOG_TAGS = {
@@ -429,7 +447,9 @@ _SCHEMA_TAGS = {
                     "FROM xgboost.main.fit((SELECT * FROM xgboost.main.iris), "
                     "estimator := 'xgb_classifier', target := 'target', id := 'sample_id')"
                 ),
-            }
+            },
+            {"description": CV_PREDICT_IRIS_CONFUSION_DESCRIPTION, "sql": CV_PREDICT_IRIS_CONFUSION_SQL},
+            {"description": CV_PREDICT_DIABETES_BMI_ERROR_DESCRIPTION, "sql": CV_PREDICT_DIABETES_BMI_ERROR_SQL},
         ]
     ),
 }
