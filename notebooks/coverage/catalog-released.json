@@ -1,0 +1,531 @@
+{
+  "schema_version": 1,
+  "repository": "Query-farm/vgi-xgboost",
+  "revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+  "release_tag": "v0.1.0",
+  "captured_at": "2026-11-14T23:38:02.728271+00:00",
+  "default_schema": "main",
+  "scope": "all_public_functions_and_tables",
+  "complete": true,
+  "evidence": [
+    {
+      "path": "coverage/arguments.json",
+      "sha256": "a4086f828111aeb9ed65a66e95f7626d093cb9546a05b77f6b84d28d6b40f4c9",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/breast_cancer-columns.json",
+      "sha256": "10ab2f581f358aeff445fad10fb043d51f4dbb33924f1b0f16c6e286560df726",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/breast_cancer-table-columns.json",
+      "sha256": "fdf65d780c7a13a1556c40f79dd74b5efb036781a594655b5a7347207192a6d8",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/california_housing-columns.json",
+      "sha256": "a90864924ae9b627e45cdd80c4b2095dd813bc7ac9004ce1423b3aae7cf7cb96",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/california_housing-table-columns.json",
+      "sha256": "d499932befb7657016a8cf5e4e7994b310b289a16bba07e7e194a11f397e769e",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/catalog-metadata.json",
+      "sha256": "b55373fd7d2352951e704a3171d776c09e80b781d4e4d17399fa1580c7ab2921",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/copy-formats.json",
+      "sha256": "ecf355ba4db7a98a8ef456d219120c9beafe222e1ac549b8bcdfbd50983fec87",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/cross_val_predict-columns.json",
+      "sha256": "0a8b760c649a24812c6b5b7421bada8a51e5713ef5b6bd34fd71b20479a2c769",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/cross_val_score-columns.json",
+      "sha256": "6b630cb9a77ae6fcfb40beac310e8b8eb6862757825650956fa1feeb47a89200",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/diabetes-columns.json",
+      "sha256": "348a2b88456765a24e6d77451507c295155f65a9fa68b1b8c91c44bb95952579",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/diabetes-table-columns.json",
+      "sha256": "77bb9a9c1f856dfb30eae02543d31eddfe6596c7ded35fb8204826713f995d5f",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/drop_model-columns.json",
+      "sha256": "4812d835ede6c8036c58156cc896a54237f737c87e330eec5104c1f425fb3955",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/explain-columns.json",
+      "sha256": "9dd5d3ba1dbba7be7348b41e7cb06ce391c521fcf75425085a795a7116a816f6",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/feature_importance-columns.json",
+      "sha256": "0d8b9947cf76ca46554734fc82287c9b0f9d53ff482392485d2ef6f9f61295c5",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/fit-columns.json",
+      "sha256": "3555f9fc389d260c133752fdcc4a93bc804dfeac169f880cf3eb224260927cba",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/fit_xgb_classifier-columns.json",
+      "sha256": "d6ae2ae9933809b290b8a91670b33bd73d4745f111f0d7c09d9dfa745aaeeb9a",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/fit_xgb_regressor-columns.json",
+      "sha256": "96906b342ce8b2a4b5bd02cfbcb6cde71bf467dbfa0d557961e5be76e6e982cf",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/fit_xgb_rf_classifier-columns.json",
+      "sha256": "f15ad15f47e8008adee4f4ca77199d3afa6d0f2e357e31fb51d11f50894ed236",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/fit_xgb_rf_regressor-columns.json",
+      "sha256": "ac28b75fa3192eb5d366159b4d8a6881890dc9d5cb3fbd22d3a5b3109033a577",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/functions.json",
+      "sha256": "c63ab202625ad9fe681b6073301d3691d9bddfc8853a63fb4f5c843f99d15620",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/grid_search-columns.json",
+      "sha256": "a289f01a72bb8ba05504a307cac78aff32ad67cee25d96b0172f3d2ceaa08d71",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/iris-columns.json",
+      "sha256": "331158718884c1044496974274e9cba1782bf08b11d6a30c226dc6523180b3f3",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/iris-table-columns.json",
+      "sha256": "d796d2f14238b5b02633ddef53038ad419ee797c8f1954243294042b85328537",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/list_models-columns.json",
+      "sha256": "6f67d6cd16f2a2ca5bce9a7c4c673b75286446ee071cf8d093cfeff92f272f5e",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/list_models-table-columns.json",
+      "sha256": "6b6865cdc6e637d96d0a044aa71d7a6555ba6d3d2899d796e95aa726da73e53f",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/make_classification-columns.json",
+      "sha256": "d3b64a909ed22167eb7d76f7e58597d156d612656c086a2e1274ece1bae70a61",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/make_regression-columns.json",
+      "sha256": "2e0a1b1ef29997eca7123a3ac8265490031a7f07d2eb0f7136d2ba4388c1f8dd",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/model_info-columns.json",
+      "sha256": "89a37a01c263ed6f2f28ce89635d3b04f117acec6d06899b0dce0da5d3d64e07",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/partial_dependence-columns.json",
+      "sha256": "366de0d7f66083851238c200536959300626f262c4aa8ef0f020ca3f2b65d215",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/permutation_importance-columns.json",
+      "sha256": "a8009722a1260fd92fe734973b1e48eedeef493ca807205bd13e2dd0ea88ae0c",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/predict-columns.json",
+      "sha256": "767c92756667bce07eaeef9cc27e7c9c67fb37a00766737eaa002e64595c2057",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/randomized_search-columns.json",
+      "sha256": "a550b6b21bc43d3558c4891f2804fedf0ee733688e64793ebe0b4f4374d3d76d",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/runtime-probe.json",
+      "sha256": "79f91e27f5e4a7d563f3fa7a955d03781a680c7b731c3a656d9f80171c3ec561",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/source-compatibility.json",
+      "sha256": "8d3ce3a997a5072a5b3aa9f21758ccbfa7972e700e74950303005b5162e0966f",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/tables.json",
+      "sha256": "7c66cc01e535b5e7deddd0f16e6e481467156d38db640135d516cd47fdf1281f",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/views.json",
+      "sha256": "bda185cdd85bae583a7b9f603fbcbec49cfb797ca779eee6375497d84465dfc6",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/wine-columns.json",
+      "sha256": "f05429060ef64bea553e605ed985b310845ab54f60bf0042c984a85f7f38286b",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    },
+    {
+      "path": "coverage/wine-table-columns.json",
+      "sha256": "3b175a65c84e48a2d0e2f878b58ff1fccb82223f40f49db5213cd3b7bbadb44d",
+      "description": "Actual full released function/table/view/COPY catalog, full arguments and representative output columns; release source exactly equals current public main."
+    }
+  ],
+  "objects": [
+    {
+      "schema": "main",
+      "name": "breast_cancer",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "breast_cancer() -> TABLE(sample_id INTEGER, mean_radius DOUBLE, mean_texture DOUBLE, mean_perimeter DOUBLE, mean_area DOUBLE, mean_smoothness DOUBLE, mean_compactness DOUBLE, mean_concavity DOUBLE, mean_concave_points DOUBLE, mean_symmetry DOUBLE, mean_fractal_dimension DOUBLE, radius_error DOUBLE, texture_error DOUBLE, perimeter_error DOUBLE, area_error DOUBLE, smoothness_error DOUBLE, compactness_error DOUBLE, concavity_error DOUBLE, concave_points_error DOUBLE, symmetry_error DOUBLE, fractal_dimension_error DOUBLE, worst_radius DOUBLE, worst_texture DOUBLE, worst_perimeter DOUBLE, worst_area DOUBLE, worst_smoothness DOUBLE, worst_compactness DOUBLE, worst_concavity DOUBLE, worst_concave_points DOUBLE, worst_symmetry DOUBLE, worst_fractal_dimension DOUBLE, target INTEGER, target_name VARCHAR)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "california_housing",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "california_housing() -> TABLE(sample_id INTEGER, medinc DOUBLE, houseage DOUBLE, averooms DOUBLE, avebedrms DOUBLE, population DOUBLE, aveoccup DOUBLE, latitude DOUBLE, longitude DOUBLE, target DOUBLE)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "cross_val_predict",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "cross_val_predict(data TABLE, target VARCHAR, params VARCHAR, id VARCHAR, estimator VARCHAR, cv BIGINT) -> TABLE(prediction BIGINT)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "cross_val_score",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "cross_val_score(data TABLE, params VARCHAR, target VARCHAR, estimator VARCHAR, id VARCHAR, scoring VARCHAR, cv BIGINT) -> TABLE(fold BIGINT, score DOUBLE)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "diabetes",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "diabetes() -> TABLE(sample_id INTEGER, age DOUBLE, sex DOUBLE, bmi DOUBLE, bp DOUBLE, s1 DOUBLE, s2 DOUBLE, s3 DOUBLE, s4 DOUBLE, s5 DOUBLE, s6 DOUBLE, target DOUBLE)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "drop_model",
+      "kind": "function",
+      "authentication": "none",
+      "access": "write",
+      "signatures": [
+        "drop_model(model_name VARCHAR) -> TABLE(model_name VARCHAR, dropped BOOLEAN)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "explain",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "explain(data TABLE, model_name VARCHAR, model BLOB, id VARCHAR) -> TABLE(feature VARCHAR, shap_value DOUBLE, base_value DOUBLE)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "feature_importance",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "feature_importance(model_name VARCHAR, model BLOB, importance_type VARCHAR) -> TABLE(feature VARCHAR, importance DOUBLE, rank INTEGER)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "fit",
+      "kind": "function",
+      "authentication": "none",
+      "access": "write",
+      "signatures": [
+        "fit(data TABLE, target VARCHAR, params VARCHAR, model_name VARCHAR, id VARCHAR, estimator VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, n_samples BIGINT, n_features BIGINT, n_classes BIGINT, train_score DOUBLE, features VARCHAR[], model BLOB)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "fit_xgb_classifier",
+      "kind": "function",
+      "authentication": "none",
+      "access": "write",
+      "signatures": [
+        "fit_xgb_classifier(data TABLE, subsample DOUBLE, reg_lambda DOUBLE, tree_method VARCHAR, target VARCHAR, reg_alpha DOUBLE, random_state BIGINT, n_estimators BIGINT, max_depth BIGINT, model_name VARCHAR, min_child_weight DOUBLE, gamma DOUBLE, learning_rate DOUBLE, booster VARCHAR, colsample_bytree DOUBLE, objective VARCHAR, id VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, n_samples BIGINT, n_features BIGINT, n_classes BIGINT, train_score DOUBLE, features VARCHAR[], model BLOB)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "fit_xgb_regressor",
+      "kind": "function",
+      "authentication": "none",
+      "access": "write",
+      "signatures": [
+        "fit_xgb_regressor(data TABLE, subsample DOUBLE, reg_lambda DOUBLE, tree_method VARCHAR, target VARCHAR, reg_alpha DOUBLE, random_state BIGINT, n_estimators BIGINT, max_depth BIGINT, model_name VARCHAR, min_child_weight DOUBLE, gamma DOUBLE, learning_rate DOUBLE, booster VARCHAR, colsample_bytree DOUBLE, objective VARCHAR, id VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, n_samples BIGINT, n_features BIGINT, n_classes BIGINT, train_score DOUBLE, features VARCHAR[], model BLOB)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "fit_xgb_rf_classifier",
+      "kind": "function",
+      "authentication": "none",
+      "access": "write",
+      "signatures": [
+        "fit_xgb_rf_classifier(data TABLE, subsample DOUBLE, reg_lambda DOUBLE, tree_method VARCHAR, target VARCHAR, reg_alpha DOUBLE, random_state BIGINT, n_estimators BIGINT, max_depth BIGINT, model_name VARCHAR, min_child_weight DOUBLE, gamma DOUBLE, learning_rate DOUBLE, booster VARCHAR, colsample_bytree DOUBLE, objective VARCHAR, id VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, n_samples BIGINT, n_features BIGINT, n_classes BIGINT, train_score DOUBLE, features VARCHAR[], model BLOB)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "fit_xgb_rf_regressor",
+      "kind": "function",
+      "authentication": "none",
+      "access": "write",
+      "signatures": [
+        "fit_xgb_rf_regressor(data TABLE, subsample DOUBLE, reg_lambda DOUBLE, tree_method VARCHAR, target VARCHAR, reg_alpha DOUBLE, random_state BIGINT, n_estimators BIGINT, max_depth BIGINT, model_name VARCHAR, min_child_weight DOUBLE, gamma DOUBLE, learning_rate DOUBLE, booster VARCHAR, colsample_bytree DOUBLE, objective VARCHAR, id VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, n_samples BIGINT, n_features BIGINT, n_classes BIGINT, train_score DOUBLE, features VARCHAR[], model BLOB)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "grid_search",
+      "kind": "function",
+      "authentication": "none",
+      "access": "write",
+      "signatures": [
+        "grid_search(data TABLE, model_name VARCHAR, target VARCHAR, estimator UNION(xgb_classifier STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_regressor STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_rf_classifier STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_rf_regressor STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[])), id VARCHAR, scoring VARCHAR, cv BIGINT) -> TABLE(estimator VARCHAR, params VARCHAR, mean_test_score DOUBLE, std_test_score DOUBLE, rank BIGINT, model BLOB)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "iris",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "iris() -> TABLE(sample_id INTEGER, sepal_length_cm DOUBLE, sepal_width_cm DOUBLE, petal_length_cm DOUBLE, petal_width_cm DOUBLE, target INTEGER, target_name VARCHAR)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "list_models",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "list_models() -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, target VARCHAR, n_features BIGINT, n_samples BIGINT, n_classes BIGINT, train_score DOUBLE, xgboost_version VARCHAR, created_at VARCHAR, features VARCHAR[])"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "make_classification",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "make_classification(n_samples BIGINT, n_informative BIGINT, random_state BIGINT, n_features BIGINT, n_classes BIGINT) -> TABLE(sample_id INTEGER, feature_0 DOUBLE, feature_1 DOUBLE, feature_2 DOUBLE, feature_3 DOUBLE, feature_4 DOUBLE, feature_5 DOUBLE, feature_6 DOUBLE, feature_7 DOUBLE, feature_8 DOUBLE, feature_9 DOUBLE, feature_10 DOUBLE, feature_11 DOUBLE, feature_12 DOUBLE, feature_13 DOUBLE, feature_14 DOUBLE, feature_15 DOUBLE, feature_16 DOUBLE, feature_17 DOUBLE, feature_18 DOUBLE, feature_19 DOUBLE, target INTEGER)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "make_regression",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "make_regression(noise DOUBLE, n_samples BIGINT, n_informative BIGINT, random_state BIGINT, n_features BIGINT) -> TABLE(sample_id INTEGER, feature_0 DOUBLE, feature_1 DOUBLE, feature_2 DOUBLE, feature_3 DOUBLE, feature_4 DOUBLE, feature_5 DOUBLE, feature_6 DOUBLE, feature_7 DOUBLE, feature_8 DOUBLE, feature_9 DOUBLE, feature_10 DOUBLE, feature_11 DOUBLE, feature_12 DOUBLE, feature_13 DOUBLE, feature_14 DOUBLE, feature_15 DOUBLE, feature_16 DOUBLE, feature_17 DOUBLE, feature_18 DOUBLE, feature_19 DOUBLE, target DOUBLE)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "model_info",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "model_info(model_name VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, target VARCHAR, n_features BIGINT, n_samples BIGINT, n_classes BIGINT, train_score DOUBLE, xgboost_version VARCHAR, created_at VARCHAR, features VARCHAR[])"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "partial_dependence",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "partial_dependence(data TABLE, model BLOB, model_name VARCHAR, grid_resolution BIGINT, feature VARCHAR) -> TABLE(feature_value DOUBLE, class BIGINT, partial_dependence DOUBLE)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "permutation_importance",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "permutation_importance(data TABLE, target VARCHAR, model BLOB, scoring VARCHAR, random_state BIGINT, n_repeats BIGINT, model_name VARCHAR) -> TABLE(feature VARCHAR, importance_mean DOUBLE, importance_std DOUBLE, rank INTEGER)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "predict",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "predict(data TABLE, with_proba BOOLEAN, output_margin BOOLEAN, model_name VARCHAR, pred_leaf BOOLEAN, model BLOB, id VARCHAR) -> TABLE(prediction DOUBLE)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "randomized_search",
+      "kind": "function",
+      "authentication": "none",
+      "access": "write",
+      "signatures": [
+        "randomized_search(data TABLE, random_state BIGINT, n_iter BIGINT, model_name VARCHAR, target VARCHAR, id VARCHAR, estimator UNION(xgb_classifier STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_regressor STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_rf_classifier STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_rf_regressor STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[])), scoring VARCHAR, cv BIGINT) -> TABLE(estimator VARCHAR, params VARCHAR, mean_test_score DOUBLE, std_test_score DOUBLE, rank BIGINT, model BLOB)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "wine",
+      "kind": "function",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "wine() -> TABLE(sample_id INTEGER, alcohol DOUBLE, malic_acid DOUBLE, ash DOUBLE, alcalinity_of_ash DOUBLE, magnesium DOUBLE, total_phenols DOUBLE, flavanoids DOUBLE, nonflavanoid_phenols DOUBLE, proanthocyanins DOUBLE, color_intensity DOUBLE, hue DOUBLE, od280_od315_of_diluted_wines DOUBLE, proline DOUBLE, target INTEGER, target_name VARCHAR)"
+      ],
+      "output_schema_scope": "Representative arguments in the linked DESCRIBE; dynamic fit/predict/generator columns vary with inputs."
+    },
+    {
+      "schema": "main",
+      "name": "list_models",
+      "kind": "table",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, target VARCHAR, n_features BIGINT, n_samples BIGINT, n_classes BIGINT, train_score DOUBLE, xgboost_version VARCHAR, created_at VARCHAR, features VARCHAR[])"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "breast_cancer",
+      "kind": "table",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "TABLE(sample_id INTEGER, mean_radius DOUBLE, mean_texture DOUBLE, mean_perimeter DOUBLE, mean_area DOUBLE, mean_smoothness DOUBLE, mean_compactness DOUBLE, mean_concavity DOUBLE, mean_concave_points DOUBLE, mean_symmetry DOUBLE, mean_fractal_dimension DOUBLE, radius_error DOUBLE, texture_error DOUBLE, perimeter_error DOUBLE, area_error DOUBLE, smoothness_error DOUBLE, compactness_error DOUBLE, concavity_error DOUBLE, concave_points_error DOUBLE, symmetry_error DOUBLE, fractal_dimension_error DOUBLE, worst_radius DOUBLE, worst_texture DOUBLE, worst_perimeter DOUBLE, worst_area DOUBLE, worst_smoothness DOUBLE, worst_compactness DOUBLE, worst_concavity DOUBLE, worst_concave_points DOUBLE, worst_symmetry DOUBLE, worst_fractal_dimension DOUBLE, target INTEGER, target_name VARCHAR)"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "diabetes",
+      "kind": "table",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "TABLE(sample_id INTEGER, age DOUBLE, sex DOUBLE, bmi DOUBLE, bp DOUBLE, s1 DOUBLE, s2 DOUBLE, s3 DOUBLE, s4 DOUBLE, s5 DOUBLE, s6 DOUBLE, target DOUBLE)"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "california_housing",
+      "kind": "table",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "TABLE(sample_id INTEGER, medinc DOUBLE, houseage DOUBLE, averooms DOUBLE, avebedrms DOUBLE, population DOUBLE, aveoccup DOUBLE, latitude DOUBLE, longitude DOUBLE, target DOUBLE)"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "wine",
+      "kind": "table",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "TABLE(sample_id INTEGER, alcohol DOUBLE, malic_acid DOUBLE, ash DOUBLE, alcalinity_of_ash DOUBLE, magnesium DOUBLE, total_phenols DOUBLE, flavanoids DOUBLE, nonflavanoid_phenols DOUBLE, proanthocyanins DOUBLE, color_intensity DOUBLE, hue DOUBLE, od280_od315_of_diluted_wines DOUBLE, proline DOUBLE, target INTEGER, target_name VARCHAR)"
+      ]
+    },
+    {
+      "schema": "main",
+      "name": "iris",
+      "kind": "table",
+      "authentication": "none",
+      "access": "read",
+      "signatures": [
+        "TABLE(sample_id INTEGER, sepal_length_cm DOUBLE, sepal_width_cm DOUBLE, petal_length_cm DOUBLE, petal_width_cm DOUBLE, target INTEGER, target_name VARCHAR)"
+      ]
+    }
+  ],
+  "launch": "uv run --no-project --python 3.13 python xgboost_release.py v0.1.0",
+  "runtime": "Haybarn2.0.0rc11",
+  "review_notes": "Release tag peels to exactly current public source. Full actual runtime catalog supplies identical revision evidence for release/current. No source/root lock edits. Twenty-four functions include four generated typed fit names missed by static extraction; six parameterless functions also appear as same-name tables and count once. No views or COPY formats. Fit/search can write the local model registry; drop_model deletes from it and remains in denominator. california_housing may fetch public dataset on execution; DESCRIBE bound its schema without scanning it. No authenticated objects."
+}

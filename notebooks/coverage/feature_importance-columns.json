@@ -1,0 +1,38 @@
+{
+  "query": "DESCRIBE SELECT * FROM xgboost.main.feature_importance('catalog_probe')",
+  "captured_at": "2026-11-14T23:44:21.861005+00:00",
+  "columns": [
+    "column_name",
+    "column_type",
+    "null",
+    "key",
+    "default",
+    "extra"
+  ],
+  "rows": [
+    [
+      "feature",
+      "VARCHAR",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "importance",
+      "DOUBLE",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "rank",
+      "INTEGER",
+      "YES",
+      null,
+      null,
+      null
+    ]
+  ]
+}

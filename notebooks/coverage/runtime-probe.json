@@ -1,0 +1,12 @@
+{
+  "query": "SELECT count(*) AS rows FROM xgboost.main.iris()",
+  "captured_at": "2026-11-14T23:38:02.755250+00:00",
+  "columns": [
+    "rows"
+  ],
+  "rows": [
+    [
+      150
+    ]
+  ]
+}

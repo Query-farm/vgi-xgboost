@@ -1,0 +1,46 @@
+{
+  "query": "DESCRIBE SELECT * FROM xgboost.main.permutation_importance((SELECT i::DOUBLE AS x,(i*2)::DOUBLE AS target FROM range(20) r(i)),model_name:='catalog_probe',target:='target')",
+  "captured_at": "2026-11-14T23:44:21.862671+00:00",
+  "columns": [
+    "column_name",
+    "column_type",
+    "null",
+    "key",
+    "default",
+    "extra"
+  ],
+  "rows": [
+    [
+      "feature",
+      "VARCHAR",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "importance_mean",
+      "DOUBLE",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "importance_std",
+      "DOUBLE",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "rank",
+      "INTEGER",
+      "YES",
+      null,
+      null,
+      null
+    ]
+  ]
+}

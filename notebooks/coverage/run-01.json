@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "notebook_sha256": "0faf86635dc5401e2e101475b4731165e96a1b11e02eeb7a4ca44e21f2eeb30b",
+  "catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+  "worker_revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+  "status": "success",
+  "executed_at": "2026-11-14T23:48:48.375761+00:00",
+  "engine": "Haybarn2.0.0rc11 / published VGI extension",
+  "command": "uv run --locked python artifacts/execute_with_receipts.py; invokes python -m vgi_notebooks.execute 01_evaluate_predictions_before_explaining_them.ipynb",
+  "catalog_aliases": [
+    "xgboost"
+  ],
+  "cells": [
+    {
+      "id": "parameters",
+      "status": "success",
+      "execution_count": 1,
+      "source_sha256": "4e7921f4dab29254b0ac3eaddafd0a7c84f5ff28bf9b9643d173bf6e6b1d609b",
+      "outputs_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "id": "bootstrap",
+      "status": "success",
+      "execution_count": 2,
+      "source_sha256": "931841f37a4252741c6d6511990342af92b0737eb0091e4d4a1996089531d19e",
+      "outputs_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "id": "setup",
+      "status": "success",
+      "execution_count": 3,
+      "source_sha256": "ae5df9a39f5118d30c087d03518be7f16dd94cca8eddd4a3d61c37eface20ed0",
+      "outputs_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "id": "connection",
+      "status": "success",
+      "execution_count": 4,
+      "source_sha256": "85b6722972155e0d7460599c3b446f88b709fc6550f058efc774dab46bb45f6f",
+      "outputs_sha256": "c17c19a5c176854762c97c96bafef62f247262c382ecc6533cf998819c105960"
+    },
+    {
+      "id": "population-query",
+      "status": "success",
+      "execution_count": 5,
+      "source_sha256": "66205fa6b2e2474ab8e41ca69d65c7b274f7eefe855bd49f97b6bf2b716f4e3f",
+      "outputs_sha256": "c1582acbb2c40ba620c7a5946a3b3be81792db67dcc350002aec3ee7fa43d8f7"
+    },
+    {
+      "id": "fit-query",
+      "status": "success",
+      "execution_count": 6,
+      "source_sha256": "649076a9dab53999478ee2d62ec1e94bb3b5e43e7f841f8c8de8e3bfba1b9c89",
+      "outputs_sha256": "4ad198c92a1bfa09b5fc49d0d183505913dd5bd350eb8f4edeeddd9025322746"
+    },
+    {
+      "id": "registry-query",
+      "status": "success",
+      "execution_count": 7,
+      "source_sha256": "1c7d88c86448df2787415e03b078a9514ff23b3c1a7d662d712326b15d3eff4a",
+      "outputs_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "id": "registry-finding",
+      "status": "success",
+      "execution_count": 8,
+      "source_sha256": "d115994caddc42351d84ce25f3bcbcdbce257b5f1c69334554421460fdbd593c",
+      "outputs_sha256": "da0f8ea28deea8e3d6f05e71a12aad14a224bafc9fee83639fab4a47a15d5bda"
+    },
+    {
+      "id": "prediction-query",
+      "status": "success",
+      "execution_count": 9,
+      "source_sha256": "9d7e561b3b6c5b10e4b048777ea66c5c1876302bbe2ecdafdab7f331f6030442",
+      "outputs_sha256": "e93fa6e791632cb851e2970838539eb7cbd46046fbf28d3e724ec1aa44f06259"
+    },
+    {
+      "id": "metrics-query",
+      "status": "success",
+      "execution_count": 10,
+      "source_sha256": "8e7431cfd80e6f963009282ff517619f4e539f6b08ad82026ab107e4bf83047d",
+      "outputs_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "id": "points-query",
+      "status": "success",
+      "execution_count": 11,
+      "source_sha256": "58ddd932a33be4fa1e081ab6d1bb079bac566b180374e1a789b223375ea9802e",
+      "outputs_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "id": "prediction-chart",
+      "status": "success",
+      "execution_count": 12,
+      "source_sha256": "a2e683e840a185331103f11934c2187efbff83f7b6b26afddcefcd13d45b9ea3",
+      "outputs_sha256": "2297c0bbd1250d3150c345f5b569f4d16811eb8f641cc090825d432b6400db08"
+    },
+    {
+      "id": "explain-query",
+      "status": "success",
+      "execution_count": 13,
+      "source_sha256": "c889e36e96a6305b4e05e43473ff5e63820bc8c8943dc6d67a499b7c6511481b",
+      "outputs_sha256": "f0c07b9ff736b592b7f8aeb0a9a054fa66797ba87c4881cd3dba2d677faed594"
+    },
+    {
+      "id": "contributions-query",
+      "status": "success",
+      "execution_count": 14,
+      "source_sha256": "b18ad76f76263e8ffc35d0e69611ffc477abc7ca734ec6dc4734ed6ac36956cf",
+      "outputs_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "id": "contributions-chart",
+      "status": "success",
+      "execution_count": 15,
+      "source_sha256": "d3463e8422eaf3dd90670dd645490981af762f279a5a08618d165bc116176fc5",
+      "outputs_sha256": "98ed18d88890c34b280ee5e3e1318c138da67e5deab43f6f27c8cd01f3b51075"
+    },
+    {
+      "id": "checks-query",
+      "status": "success",
+      "execution_count": 16,
+      "source_sha256": "69850f78bf2e2200e5973f9009c7f8da1ef1c7cabd74386fac634c263dd65939",
+      "outputs_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "id": "checks-finding",
+      "status": "success",
+      "execution_count": 17,
+      "source_sha256": "6f2555d942a62c46843143c2c8f5d199068ac346d9aa12569143d9468a07b01d",
+      "outputs_sha256": "8dc14405761667dfe901c2d700eb56d01288ee7b24931186c7e50438b749811c"
+    },
+    {
+      "id": "cleanup",
+      "status": "success",
+      "execution_count": 18,
+      "source_sha256": "107345b7302ae13f1ff10f74b02c6ac49d8e90de010f8d4162b3e42e6250ee92",
+      "outputs_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ]
+}

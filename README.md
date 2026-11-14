@@ -254,5 +254,5 @@ the Docker base image up to date weekly.
 
 ## Executable notebooks
 
-See [the SQL notebook](notebooks/README.md) for a synthetic held-out prediction workflow,
-SHAP reconstruction, charts and a portable pinned worker connection.
+See [the SQL notebooks](notebooks/README.md) for synthetic held-out evaluation, SHAP reconstruction,
+feature diagnostics and cross-validation selection with a portable released worker connection.

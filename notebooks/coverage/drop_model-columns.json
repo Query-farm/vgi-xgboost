@@ -1,0 +1,30 @@
+{
+  "query": "DESCRIBE SELECT * FROM xgboost.main.drop_model('catalog_probe')",
+  "captured_at": "2026-11-14T23:44:21.861613+00:00",
+  "columns": [
+    "column_name",
+    "column_type",
+    "null",
+    "key",
+    "default",
+    "extra"
+  ],
+  "rows": [
+    [
+      "model_name",
+      "VARCHAR",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "dropped",
+      "BOOLEAN",
+      "YES",
+      null,
+      null,
+      null
+    ]
+  ]
+}

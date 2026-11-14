@@ -1,0 +1,38 @@
+{
+  "query": "DESCRIBE SELECT * FROM xgboost.main.explain((SELECT i::DOUBLE AS x FROM range(20) r(i)),model_name:='catalog_probe')",
+  "captured_at": "2026-11-14T23:44:21.859563+00:00",
+  "columns": [
+    "column_name",
+    "column_type",
+    "null",
+    "key",
+    "default",
+    "extra"
+  ],
+  "rows": [
+    [
+      "feature",
+      "VARCHAR",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "shap_value",
+      "DOUBLE",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "base_value",
+      "DOUBLE",
+      "YES",
+      null,
+      null,
+      null
+    ]
+  ]
+}

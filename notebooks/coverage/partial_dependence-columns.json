@@ -1,0 +1,38 @@
+{
+  "query": "DESCRIBE SELECT * FROM xgboost.main.partial_dependence((SELECT i::DOUBLE AS x FROM range(20) r(i)),model_name:='catalog_probe',feature:='x')",
+  "captured_at": "2026-11-14T23:44:21.863985+00:00",
+  "columns": [
+    "column_name",
+    "column_type",
+    "null",
+    "key",
+    "default",
+    "extra"
+  ],
+  "rows": [
+    [
+      "feature_value",
+      "DOUBLE",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "class",
+      "BIGINT",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "partial_dependence",
+      "DOUBLE",
+      "YES",
+      null,
+      null,
+      null
+    ]
+  ]
+}

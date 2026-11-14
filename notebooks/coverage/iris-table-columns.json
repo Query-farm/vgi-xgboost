@@ -1,0 +1,70 @@
+{
+  "query": "DESCRIBE SELECT * FROM xgboost.main.iris",
+  "captured_at": "2026-11-14T23:44:21.866505+00:00",
+  "columns": [
+    "column_name",
+    "column_type",
+    "null",
+    "key",
+    "default",
+    "extra"
+  ],
+  "rows": [
+    [
+      "sample_id",
+      "INTEGER",
+      "NO",
+      "PRI",
+      null,
+      null
+    ],
+    [
+      "sepal_length_cm",
+      "DOUBLE",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "sepal_width_cm",
+      "DOUBLE",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "petal_length_cm",
+      "DOUBLE",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "petal_width_cm",
+      "DOUBLE",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "target",
+      "INTEGER",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "target_name",
+      "VARCHAR",
+      "YES",
+      null,
+      null,
+      null
+    ]
+  ]
+}

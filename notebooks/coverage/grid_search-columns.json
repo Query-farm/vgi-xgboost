@@ -1,0 +1,62 @@
+{
+  "query": "DESCRIBE SELECT * FROM xgboost.main.grid_search((SELECT i::DOUBLE AS x,(i*2)::DOUBLE AS target FROM range(20) r(i)),target:='target',estimator:=union_value(xgb_regressor:={'n_estimators':[2]}))",
+  "captured_at": "2026-11-14T23:44:21.855709+00:00",
+  "columns": [
+    "column_name",
+    "column_type",
+    "null",
+    "key",
+    "default",
+    "extra"
+  ],
+  "rows": [
+    [
+      "estimator",
+      "VARCHAR",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "params",
+      "VARCHAR",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "mean_test_score",
+      "DOUBLE",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "std_test_score",
+      "DOUBLE",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "rank",
+      "BIGINT",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "model",
+      "BLOB",
+      "YES",
+      null,
+      null,
+      null
+    ]
+  ]
+}

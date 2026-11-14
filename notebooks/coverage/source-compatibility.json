@@ -1,0 +1,21 @@
+{
+  "release": "v0.1.0",
+  "release_commit": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+  "current_revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+  "source_ci": {
+    "url": "https://github.com/Query-farm/vgi-xgboost/actions/runs/43621934758",
+    "revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+    "conclusion": "success"
+  },
+  "runtime": "Haybarn2.0.0rc11",
+  "launch": "uv run --no-project --python 3.13 python xgboost_release.py v0.1.0",
+  "source_review": "Release tag peels to exactly current public source. Full actual runtime catalog supplies identical revision evidence for release/current. No source/root lock edits. Twenty-four functions include four generated typed fit names missed by static extraction; six parameterless functions also appear as same-name tables and count once. No views or COPY formats. Fit/search can write the local model registry; drop_model deletes from it and remains in denominator. california_housing may fetch public dataset on execution; DESCRIBE bound its schema without scanning it. No authenticated objects.",
+  "launcher": "Release has no executable assets/console script and setuptools omits root entry point. Worker-specific companion checks tag/full SHA, atomically caches verified source, syncs release uv.lock with --frozen --no-dev --no-install-project and execs the unchanged root script under Python3.13. No dependency overrides or worker build.",
+  "behavior_notes": [
+    "Cross-validation integer regression folds are unshuffled KFold on input row order.",
+    "For direct regression fit, registry train_score is in-sample R squared. Search stores best CV score in the same field; notebook uses explicit leaderboard scores.",
+    "Permutation scorer is negative root mean squared error; positive score drop means RMSE increase.",
+    "Partial dependence uses sklearn average method and actual returned grid; it does not imply a causal effect."
+  ],
+  "metadata_provenance": "Actual catalog-metadata.json vgi.title/vgi.subtitle."
+}

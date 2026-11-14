@@ -1,0 +1,18 @@
+{
+  "query": "SELECT * FROM vgi_copy_formats() WHERE catalog_name='xgboost'",
+  "captured_at": "2026-11-14T23:38:02.741371+00:00",
+  "columns": [
+    "catalog_name",
+    "format_name",
+    "direction",
+    "ordered",
+    "format_description",
+    "format_comment",
+    "format_tags",
+    "handler",
+    "option_name",
+    "option_type",
+    "option_description"
+  ],
+  "rows": []
+}

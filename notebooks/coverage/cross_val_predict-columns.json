@@ -1,0 +1,22 @@
+{
+  "query": "DESCRIBE SELECT * FROM xgboost.main.cross_val_predict((SELECT i::DOUBLE AS x,(i*2)::DOUBLE AS target FROM range(20) r(i)),target:='target')",
+  "captured_at": "2026-11-14T23:44:21.852709+00:00",
+  "columns": [
+    "column_name",
+    "column_type",
+    "null",
+    "key",
+    "default",
+    "extra"
+  ],
+  "rows": [
+    [
+      "prediction",
+      "BIGINT",
+      "YES",
+      null,
+      null,
+      null
+    ]
+  ]
+}

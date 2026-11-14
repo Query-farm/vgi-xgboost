@@ -1,0 +1,22 @@
+{
+  "query": "DESCRIBE SELECT * FROM xgboost.main.predict((SELECT i::DOUBLE AS x FROM range(20) r(i)),model_name:='catalog_probe')",
+  "captured_at": "2026-11-14T23:44:21.858667+00:00",
+  "columns": [
+    "column_name",
+    "column_type",
+    "null",
+    "key",
+    "default",
+    "extra"
+  ],
+  "rows": [
+    [
+      "prediction",
+      "DOUBLE",
+      "YES",
+      null,
+      null,
+      null
+    ]
+  ]
+}

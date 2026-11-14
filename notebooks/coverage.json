@@ -1,0 +1,541 @@
+{
+  "schema_version": 1,
+  "catalogs": {
+    "released": {
+      "path": "coverage/catalog-released.json",
+      "sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T23:49:32.666921+00:00",
+        "catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+        "notes": "Complete actual 24 functions + six same-name table aliases counted once. Includes generated typed fit functions, write-capable fit/search/drop_model and all dataset readers. No views/COPY/authenticated surfaces. Full arguments, representative output/table columns retained. Released tag peels to exact current public baseline SHA, so same authoritative runtime evidence applies to both."
+      }
+    },
+    "current": {
+      "path": "coverage/catalog-current.json",
+      "sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T23:49:32.666921+00:00",
+        "catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+        "notes": "Complete actual 24 functions + six same-name table aliases counted once. Includes generated typed fit functions, write-capable fit/search/drop_model and all dataset readers. No views/COPY/authenticated surfaces. Full arguments, representative output/table columns retained. Released tag peels to exact current public baseline SHA, so same authoritative runtime evidence applies to both."
+      }
+    }
+  },
+  "notebooks": [
+    {
+      "path": "01_evaluate_predictions_before_explaining_them.ipynb",
+      "sha256": "0faf86635dc5401e2e101475b4731165e96a1b11e02eeb7a4ca44e21f2eeb30b",
+      "execution": {
+        "path": "coverage/run-01.json",
+        "sha256": "bca0fdda37a523ddf9ca0c2cdde5d315277039e88a5ef5141a926a8678bf8f50"
+      }
+    },
+    {
+      "path": "02_three_questions_about_features.ipynb",
+      "sha256": "6020acdd1cc291319ba3da7cea3e8b3725238d51abf12bdfaaf2189cfc3f61d8",
+      "execution": {
+        "path": "coverage/run-02.json",
+        "sha256": "00c976ac2597e58b9e951def04f6c0006fef0744bfdc1f2051e0e332dcdd1c58"
+      }
+    },
+    {
+      "path": "03_selection_scores_and_new_rows.ipynb",
+      "sha256": "fd8c95f731e466690f90158eb086019bf2ec5c9bad24d082ac621b9e23ffc8cb",
+      "execution": {
+        "path": "coverage/run-03.json",
+        "sha256": "99673ec286f2f0eb162ed3913710472f69e538383578b7267cae138604d200b6"
+      }
+    }
+  ],
+  "examples": [
+    {
+      "object": {
+        "schema": "main",
+        "name": "fit_xgb_regressor"
+      },
+      "notebook": "01_evaluate_predictions_before_explaining_them.ipynb",
+      "sql": [
+        {
+          "cell": "fit-query",
+          "reference": "xgboost.main.fit_xgb_regressor"
+        }
+      ],
+      "narrative_cells": [
+        "population-story",
+        "fit-story",
+        "experiment-story"
+      ],
+      "result_cells": [
+        "fit-query",
+        "prediction-chart",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "prediction-chart",
+        "experiment-story"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T23:49:32.666921+00:00",
+        "notebook_sha256": "0faf86635dc5401e2e101475b4731165e96a1b11e02eeb7a4ca44e21f2eeb30b",
+        "catalog_sha256": [
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+        ],
+        "purpose": "Fit only the declared training population with typed depth and fixed hyperparameters.",
+        "finding": "Fit receipt confirms 192 training rows and three intended predictors. Depth 2 to 6 changes complexity while all 240 authored rows, 48 held-out IDs, rounds and learning rate stay fixed; held-out RMSE is evaluated separately."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "list_models"
+      },
+      "notebook": "01_evaluate_predictions_before_explaining_them.ipynb",
+      "sql": [
+        {
+          "cell": "registry-query",
+          "reference": "xgboost.main.list_models"
+        }
+      ],
+      "narrative_cells": [
+        "registry-story"
+      ],
+      "result_cells": [
+        "registry-finding"
+      ],
+      "interpretation_cells": [
+        "registry-finding",
+        "registry-story"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T23:49:32.666921+00:00",
+        "notebook_sha256": "0faf86635dc5401e2e101475b4731165e96a1b11e02eeb7a4ca44e21f2eeb30b",
+        "catalog_sha256": [
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+        ],
+        "purpose": "Discover the nonempty disposable registry and verify the actual model selected for scoring.",
+        "finding": "One model joins by name to its fit receipt and named lookup, matching 192 samples and the three feature names. This is a real stored model, not coverage from an empty listing; no user registry is opened."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "model_info"
+      },
+      "notebook": "01_evaluate_predictions_before_explaining_them.ipynb",
+      "sql": [
+        {
+          "cell": "registry-query",
+          "reference": "xgboost.main.model_info"
+        }
+      ],
+      "narrative_cells": [
+        "registry-story"
+      ],
+      "result_cells": [
+        "registry-finding"
+      ],
+      "interpretation_cells": [
+        "registry-finding",
+        "registry-story"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T23:49:32.666921+00:00",
+        "notebook_sha256": "0faf86635dc5401e2e101475b4731165e96a1b11e02eeb7a4ca44e21f2eeb30b",
+        "catalog_sha256": [
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+        ],
+        "purpose": "Reconcile stored feature/row metadata with the fit result and distinguish an absent name.",
+        "finding": "Stored route_minutes metadata agrees with fit and listing; absent_model returns zero rows. In-sample R squared is explicitly separated from the later held-out error. Source review also flags search train_score semantics."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "predict"
+      },
+      "notebook": "01_evaluate_predictions_before_explaining_them.ipynb",
+      "sql": [
+        {
+          "cell": "prediction-query",
+          "reference": "xgboost.main.predict"
+        }
+      ],
+      "narrative_cells": [
+        "prediction-story",
+        "checks-story"
+      ],
+      "result_cells": [
+        "prediction-query",
+        "prediction-chart",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "prediction-chart",
+        "prediction-story"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T23:49:32.666921+00:00",
+        "notebook_sha256": "0faf86635dc5401e2e101475b4731165e96a1b11e02eeb7a4ca44e21f2eeb30b",
+        "catalog_sha256": [
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+        ],
+        "purpose": "Evaluate a model on both seen and held-out rows while excluding target/split from predictors.",
+        "finding": "Exactly 240 IDs join back to source; 192/48 populations retained. SQL computes RMSE/MAE and a training-mean baseline. A fitted explanation does not replace this evaluation."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "explain"
+      },
+      "notebook": "01_evaluate_predictions_before_explaining_them.ipynb",
+      "sql": [
+        {
+          "cell": "explain-query",
+          "reference": "xgboost.main.explain"
+        }
+      ],
+      "narrative_cells": [
+        "explain-story",
+        "checks-story"
+      ],
+      "result_cells": [
+        "explain-query",
+        "contributions-chart",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "contributions-chart",
+        "explain-story"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T23:49:32.666921+00:00",
+        "notebook_sha256": "0faf86635dc5401e2e101475b4731165e96a1b11e02eeb7a4ca44e21f2eeb30b",
+        "catalog_sha256": [
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+        ],
+        "purpose": "Check additive contribution arithmetic before interpreting one held-out prediction.",
+        "finding": "144 contribution rows cover 48 IDs times three features; repeated base plus summed SHAP values reconstruct every prediction within 1e-4 minutes. Route 200 still has target error, so the exact identity is not accuracy or causality."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "fit"
+      },
+      "notebook": "02_three_questions_about_features.ipynb",
+      "sql": [
+        {
+          "cell": "population-query",
+          "reference": "xgboost.main.fit"
+        }
+      ],
+      "narrative_cells": [
+        "population-story",
+        "importance-story"
+      ],
+      "result_cells": [
+        "population-query",
+        "importance-chart",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "importance-chart",
+        "population-story"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T23:49:32.666921+00:00",
+        "notebook_sha256": "6020acdd1cc291319ba3da7cea3e8b3725238d51abf12bdfaaf2189cfc3f61d8",
+        "catalog_sha256": [
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+        ],
+        "purpose": "Fit a fixed regressor with a deliberate constant control for interpretation diagnostics.",
+        "finding": "Generic estimator and JSON parameters fit 192 rows with four predictors, including constant_control. Worker metadata confirms shape; constant gain and permutation loss stay zero."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "feature_importance"
+      },
+      "notebook": "02_three_questions_about_features.ipynb",
+      "sql": [
+        {
+          "cell": "importance-query",
+          "reference": "xgboost.main.feature_importance"
+        }
+      ],
+      "narrative_cells": [
+        "importance-story",
+        "checks-story"
+      ],
+      "result_cells": [
+        "importance-chart",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "importance-chart",
+        "importance-story"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T23:49:32.666921+00:00",
+        "notebook_sha256": "6020acdd1cc291319ba3da7cea3e8b3725238d51abf12bdfaaf2189cfc3f61d8",
+        "catalog_sha256": [
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+        ],
+        "purpose": "Show training split gain with an explicit denominator and unused feature.",
+        "finding": "All four returned features retained. SQL normalizes each raw gain by the sum of reported gains, not accuracy; constant control is zero. Gain panel is separated from the differently scaled permutation panel."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "permutation_importance"
+      },
+      "notebook": "02_three_questions_about_features.ipynb",
+      "sql": [
+        {
+          "cell": "importance-query",
+          "reference": "xgboost.main.permutation_importance"
+        }
+      ],
+      "narrative_cells": [
+        "importance-story",
+        "checks-story"
+      ],
+      "result_cells": [
+        "importance-chart",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "importance-chart",
+        "importance-story"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T23:49:32.666921+00:00",
+        "notebook_sha256": "6020acdd1cc291319ba3da7cea3e8b3725238d51abf12bdfaaf2189cfc3f61d8",
+        "catalog_sha256": [
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+        ],
+        "purpose": "Measure the held-out RMSE penalty of feature scrambling using an explicit scorer.",
+        "finding": "Negative RMSE scorer turns positive score drops into RMSE increases in minutes. Ten shuffles yield mean and SD; zero constant-control loss retained. SD is not a confidence interval, and results describe this evaluation population."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "partial_dependence"
+      },
+      "notebook": "02_three_questions_about_features.ipynb",
+      "sql": [
+        {
+          "cell": "sweep-query",
+          "reference": "xgboost.main.partial_dependence"
+        }
+      ],
+      "narrative_cells": [
+        "parameter-story",
+        "sweep-story",
+        "experiment-story"
+      ],
+      "result_cells": [
+        "sweep-chart",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "sweep-chart",
+        "sweep-story"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T23:49:32.666921+00:00",
+        "notebook_sha256": "6020acdd1cc291319ba3da7cea3e8b3725238d51abf12bdfaaf2189cfc3f61d8",
+        "catalog_sha256": [
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+        ],
+        "purpose": "Separate an average model-response curve from observed outcomes and feature-importance rankings.",
+        "finding": "192 training background rows held fixed; distance versus stops changes only the replacement axis. Actual grid length/coordinates used, including fewer points for discrete stops. No causal intervention claim."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "make_regression"
+      },
+      "notebook": "03_selection_scores_and_new_rows.ipynb",
+      "sql": [
+        {
+          "cell": "population-query",
+          "reference": "xgboost.main.make_regression"
+        }
+      ],
+      "narrative_cells": [
+        "population-story",
+        "parameter-story"
+      ],
+      "result_cells": [
+        "population-query",
+        "fingerprint-finding",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "population-story",
+        "experiment-story"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T23:49:32.666921+00:00",
+        "notebook_sha256": "fd8c95f731e466690f90158eb086019bf2ec5c9bad24d082ac621b9e23ffc8cb",
+        "catalog_sha256": [
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+        ],
+        "purpose": "Generate a bounded synthetic population once before assigning selection and evaluation roles.",
+        "finding": "Exactly 240 unique IDs, three features/two informative, noise12 and seed7; 192 development/48 reserved. The source fingerprint is checked unchanged across fold experiments. No real-world target units implied."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "cross_val_predict"
+      },
+      "notebook": "03_selection_scores_and_new_rows.ipynb",
+      "sql": [
+        {
+          "cell": "fold-query",
+          "reference": "xgboost.main.cross_val_predict"
+        }
+      ],
+      "narrative_cells": [
+        "fold-story",
+        "checks-story"
+      ],
+      "result_cells": [
+        "fold-finding",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "fold-finding",
+        "fold-story"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T23:49:32.666921+00:00",
+        "notebook_sha256": "fd8c95f731e466690f90158eb086019bf2ec5c9bad24d082ac621b9e23ffc8cb",
+        "catalog_sha256": [
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+        ],
+        "purpose": "Evaluate each development row from a fitted model that excluded its fold.",
+        "finding": "192 unique OOF IDs, no reserved IDs; row-level squared errors produce pooled RMSE. Ordered inputs and integer unshuffled regression folds are documented. No model is stored by this operation."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "cross_val_score"
+      },
+      "notebook": "03_selection_scores_and_new_rows.ipynb",
+      "sql": [
+        {
+          "cell": "fold-query",
+          "reference": "xgboost.main.cross_val_score"
+        }
+      ],
+      "narrative_cells": [
+        "fold-story",
+        "parameter-story"
+      ],
+      "result_cells": [
+        "fold-finding",
+        "selection-chart",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "fold-finding",
+        "fold-story"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T23:49:32.666921+00:00",
+        "notebook_sha256": "fd8c95f731e466690f90158eb086019bf2ec5c9bad24d082ac621b9e23ffc8cb",
+        "catalog_sha256": [
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+        ],
+        "purpose": "Reconcile fold-level score summaries with individual held-out predictions.",
+        "finding": "Negative RMSE is negated for display; equal-sized folds allow pooled RMSE to equal root mean square of fold RMSEs, not their simple mean. Three/six-fold experiment retains identical rows and hyperparameters."
+      }
+    },
+    {
+      "object": {
+        "schema": "main",
+        "name": "grid_search"
+      },
+      "notebook": "03_selection_scores_and_new_rows.ipynb",
+      "sql": [
+        {
+          "cell": "selection-query",
+          "reference": "xgboost.main.grid_search"
+        }
+      ],
+      "narrative_cells": [
+        "selection-story",
+        "holdout-story",
+        "experiment-story"
+      ],
+      "result_cells": [
+        "selection-chart",
+        "checks-finding"
+      ],
+      "interpretation_cells": [
+        "selection-chart",
+        "selection-story"
+      ],
+      "review": {
+        "status": "approved",
+        "reviewer": "Codex /root/notebooks_earthquakes",
+        "reviewed_at": "2026-11-14T23:49:32.666921+00:00",
+        "notebook_sha256": "fd8c95f731e466690f90158eb086019bf2ec5c9bad24d082ac621b9e23ffc8cb",
+        "catalog_sha256": [
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+          "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+        ],
+        "purpose": "Choose hyperparameters using development folds and reserve a separate final evaluation population.",
+        "finding": "Three depth candidates ranked by mean negative RMSE; exactly one model BLOB identifies the chosen candidate and refit model. The stored model uses all 192 development rows, then predicts the 48 reserved rows once. Selection score and reserved error remain distinct; repeated experiment inspection is not an untouched test."
+      }
+    }
+  ]
+}

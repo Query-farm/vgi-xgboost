@@ -1,0 +1,30 @@
+{
+  "query": "DESCRIBE SELECT * FROM xgboost.main.cross_val_score((SELECT i::DOUBLE AS x,(i*2)::DOUBLE AS target FROM range(20) r(i)),target:='target')",
+  "captured_at": "2026-11-14T23:44:21.851753+00:00",
+  "columns": [
+    "column_name",
+    "column_type",
+    "null",
+    "key",
+    "default",
+    "extra"
+  ],
+  "rows": [
+    [
+      "fold",
+      "BIGINT",
+      "YES",
+      null,
+      null,
+      null
+    ],
+    [
+      "score",
+      "DOUBLE",
+      "YES",
+      null,
+      null,
+      null
+    ]
+  ]
+}

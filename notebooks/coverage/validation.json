@@ -1,0 +1,1475 @@
+{
+  "schema_version": 1,
+  "status": "met",
+  "meets_target": true,
+  "catalogs": {
+    "released": {
+      "catalog_status": "verified",
+      "revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+      "catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+      "collection_reconciled": true,
+      "denominator": 24,
+      "observed_objects": 24,
+      "required": 12,
+      "verified_count": 13,
+      "candidate_count": 0,
+      "fraction": 0.5416666666666666,
+      "meets_target": true,
+      "exact_runtime_count": 13,
+      "runtime_revisions": [
+        "eb4f1991e788801aa11d58e231f019f0cf613f44"
+      ],
+      "covered": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "cross_val_predict"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "cross_val_score"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "explain"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "feature_importance"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit_xgb_regressor"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "grid_search"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "list_models"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "make_regression"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "model_info"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "partial_dependence"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "permutation_importance"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "predict"
+        }
+      ],
+      "uncovered": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "breast_cancer"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "california_housing"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "diabetes"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "drop_model"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit_xgb_classifier"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit_xgb_rf_classifier"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit_xgb_rf_regressor"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "iris"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "make_classification"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "randomized_search"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "wine"
+        }
+      ],
+      "objects": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "breast_cancer",
+          "kinds": [
+            "function",
+            "table"
+          ],
+          "signatures": [
+            "TABLE(sample_id INTEGER, mean_radius DOUBLE, mean_texture DOUBLE, mean_perimeter DOUBLE, mean_area DOUBLE, mean_smoothness DOUBLE, mean_compactness DOUBLE, mean_concavity DOUBLE, mean_concave_points DOUBLE, mean_symmetry DOUBLE, mean_fractal_dimension DOUBLE, radius_error DOUBLE, texture_error DOUBLE, perimeter_error DOUBLE, area_error DOUBLE, smoothness_error DOUBLE, compactness_error DOUBLE, concavity_error DOUBLE, concave_points_error DOUBLE, symmetry_error DOUBLE, fractal_dimension_error DOUBLE, worst_radius DOUBLE, worst_texture DOUBLE, worst_perimeter DOUBLE, worst_area DOUBLE, worst_smoothness DOUBLE, worst_compactness DOUBLE, worst_concavity DOUBLE, worst_concave_points DOUBLE, worst_symmetry DOUBLE, worst_fractal_dimension DOUBLE, target INTEGER, target_name VARCHAR)",
+            "breast_cancer() -> TABLE(sample_id INTEGER, mean_radius DOUBLE, mean_texture DOUBLE, mean_perimeter DOUBLE, mean_area DOUBLE, mean_smoothness DOUBLE, mean_compactness DOUBLE, mean_concavity DOUBLE, mean_concave_points DOUBLE, mean_symmetry DOUBLE, mean_fractal_dimension DOUBLE, radius_error DOUBLE, texture_error DOUBLE, perimeter_error DOUBLE, area_error DOUBLE, smoothness_error DOUBLE, compactness_error DOUBLE, concavity_error DOUBLE, concave_points_error DOUBLE, symmetry_error DOUBLE, fractal_dimension_error DOUBLE, worst_radius DOUBLE, worst_texture DOUBLE, worst_perimeter DOUBLE, worst_area DOUBLE, worst_smoothness DOUBLE, worst_compactness DOUBLE, worst_concavity DOUBLE, worst_concave_points DOUBLE, worst_symmetry DOUBLE, worst_fractal_dimension DOUBLE, target INTEGER, target_name VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "california_housing",
+          "kinds": [
+            "function",
+            "table"
+          ],
+          "signatures": [
+            "TABLE(sample_id INTEGER, medinc DOUBLE, houseage DOUBLE, averooms DOUBLE, avebedrms DOUBLE, population DOUBLE, aveoccup DOUBLE, latitude DOUBLE, longitude DOUBLE, target DOUBLE)",
+            "california_housing() -> TABLE(sample_id INTEGER, medinc DOUBLE, houseage DOUBLE, averooms DOUBLE, avebedrms DOUBLE, population DOUBLE, aveoccup DOUBLE, latitude DOUBLE, longitude DOUBLE, target DOUBLE)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "cross_val_predict",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "cross_val_predict(data TABLE, target VARCHAR, params VARCHAR, id VARCHAR, estimator VARCHAR, cv BIGINT) -> TABLE(prediction BIGINT)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "cross_val_score",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "cross_val_score(data TABLE, params VARCHAR, target VARCHAR, estimator VARCHAR, id VARCHAR, scoring VARCHAR, cv BIGINT) -> TABLE(fold BIGINT, score DOUBLE)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "diabetes",
+          "kinds": [
+            "function",
+            "table"
+          ],
+          "signatures": [
+            "TABLE(sample_id INTEGER, age DOUBLE, sex DOUBLE, bmi DOUBLE, bp DOUBLE, s1 DOUBLE, s2 DOUBLE, s3 DOUBLE, s4 DOUBLE, s5 DOUBLE, s6 DOUBLE, target DOUBLE)",
+            "diabetes() -> TABLE(sample_id INTEGER, age DOUBLE, sex DOUBLE, bmi DOUBLE, bp DOUBLE, s1 DOUBLE, s2 DOUBLE, s3 DOUBLE, s4 DOUBLE, s5 DOUBLE, s6 DOUBLE, target DOUBLE)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "drop_model",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "drop_model(model_name VARCHAR) -> TABLE(model_name VARCHAR, dropped BOOLEAN)"
+          ],
+          "access": [
+            "write"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "explain",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "explain(data TABLE, model_name VARCHAR, model BLOB, id VARCHAR) -> TABLE(feature VARCHAR, shap_value DOUBLE, base_value DOUBLE)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "feature_importance",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "feature_importance(model_name VARCHAR, model BLOB, importance_type VARCHAR) -> TABLE(feature VARCHAR, importance DOUBLE, rank INTEGER)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fit(data TABLE, target VARCHAR, params VARCHAR, model_name VARCHAR, id VARCHAR, estimator VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, n_samples BIGINT, n_features BIGINT, n_classes BIGINT, train_score DOUBLE, features VARCHAR[], model BLOB)"
+          ],
+          "access": [
+            "write"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit_xgb_classifier",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fit_xgb_classifier(data TABLE, subsample DOUBLE, reg_lambda DOUBLE, tree_method VARCHAR, target VARCHAR, reg_alpha DOUBLE, random_state BIGINT, n_estimators BIGINT, max_depth BIGINT, model_name VARCHAR, min_child_weight DOUBLE, gamma DOUBLE, learning_rate DOUBLE, booster VARCHAR, colsample_bytree DOUBLE, objective VARCHAR, id VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, n_samples BIGINT, n_features BIGINT, n_classes BIGINT, train_score DOUBLE, features VARCHAR[], model BLOB)"
+          ],
+          "access": [
+            "write"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit_xgb_regressor",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fit_xgb_regressor(data TABLE, subsample DOUBLE, reg_lambda DOUBLE, tree_method VARCHAR, target VARCHAR, reg_alpha DOUBLE, random_state BIGINT, n_estimators BIGINT, max_depth BIGINT, model_name VARCHAR, min_child_weight DOUBLE, gamma DOUBLE, learning_rate DOUBLE, booster VARCHAR, colsample_bytree DOUBLE, objective VARCHAR, id VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, n_samples BIGINT, n_features BIGINT, n_classes BIGINT, train_score DOUBLE, features VARCHAR[], model BLOB)"
+          ],
+          "access": [
+            "write"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit_xgb_rf_classifier",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fit_xgb_rf_classifier(data TABLE, subsample DOUBLE, reg_lambda DOUBLE, tree_method VARCHAR, target VARCHAR, reg_alpha DOUBLE, random_state BIGINT, n_estimators BIGINT, max_depth BIGINT, model_name VARCHAR, min_child_weight DOUBLE, gamma DOUBLE, learning_rate DOUBLE, booster VARCHAR, colsample_bytree DOUBLE, objective VARCHAR, id VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, n_samples BIGINT, n_features BIGINT, n_classes BIGINT, train_score DOUBLE, features VARCHAR[], model BLOB)"
+          ],
+          "access": [
+            "write"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit_xgb_rf_regressor",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fit_xgb_rf_regressor(data TABLE, subsample DOUBLE, reg_lambda DOUBLE, tree_method VARCHAR, target VARCHAR, reg_alpha DOUBLE, random_state BIGINT, n_estimators BIGINT, max_depth BIGINT, model_name VARCHAR, min_child_weight DOUBLE, gamma DOUBLE, learning_rate DOUBLE, booster VARCHAR, colsample_bytree DOUBLE, objective VARCHAR, id VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, n_samples BIGINT, n_features BIGINT, n_classes BIGINT, train_score DOUBLE, features VARCHAR[], model BLOB)"
+          ],
+          "access": [
+            "write"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "grid_search",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "grid_search(data TABLE, model_name VARCHAR, target VARCHAR, estimator UNION(xgb_classifier STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_regressor STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_rf_classifier STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_rf_regressor STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[])), id VARCHAR, scoring VARCHAR, cv BIGINT) -> TABLE(estimator VARCHAR, params VARCHAR, mean_test_score DOUBLE, std_test_score DOUBLE, rank BIGINT, model BLOB)"
+          ],
+          "access": [
+            "write"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "iris",
+          "kinds": [
+            "function",
+            "table"
+          ],
+          "signatures": [
+            "TABLE(sample_id INTEGER, sepal_length_cm DOUBLE, sepal_width_cm DOUBLE, petal_length_cm DOUBLE, petal_width_cm DOUBLE, target INTEGER, target_name VARCHAR)",
+            "iris() -> TABLE(sample_id INTEGER, sepal_length_cm DOUBLE, sepal_width_cm DOUBLE, petal_length_cm DOUBLE, petal_width_cm DOUBLE, target INTEGER, target_name VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "list_models",
+          "kinds": [
+            "function",
+            "table"
+          ],
+          "signatures": [
+            "TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, target VARCHAR, n_features BIGINT, n_samples BIGINT, n_classes BIGINT, train_score DOUBLE, xgboost_version VARCHAR, created_at VARCHAR, features VARCHAR[])",
+            "list_models() -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, target VARCHAR, n_features BIGINT, n_samples BIGINT, n_classes BIGINT, train_score DOUBLE, xgboost_version VARCHAR, created_at VARCHAR, features VARCHAR[])"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "make_classification",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "make_classification(n_samples BIGINT, n_informative BIGINT, random_state BIGINT, n_features BIGINT, n_classes BIGINT) -> TABLE(sample_id INTEGER, feature_0 DOUBLE, feature_1 DOUBLE, feature_2 DOUBLE, feature_3 DOUBLE, feature_4 DOUBLE, feature_5 DOUBLE, feature_6 DOUBLE, feature_7 DOUBLE, feature_8 DOUBLE, feature_9 DOUBLE, feature_10 DOUBLE, feature_11 DOUBLE, feature_12 DOUBLE, feature_13 DOUBLE, feature_14 DOUBLE, feature_15 DOUBLE, feature_16 DOUBLE, feature_17 DOUBLE, feature_18 DOUBLE, feature_19 DOUBLE, target INTEGER)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "make_regression",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "make_regression(noise DOUBLE, n_samples BIGINT, n_informative BIGINT, random_state BIGINT, n_features BIGINT) -> TABLE(sample_id INTEGER, feature_0 DOUBLE, feature_1 DOUBLE, feature_2 DOUBLE, feature_3 DOUBLE, feature_4 DOUBLE, feature_5 DOUBLE, feature_6 DOUBLE, feature_7 DOUBLE, feature_8 DOUBLE, feature_9 DOUBLE, feature_10 DOUBLE, feature_11 DOUBLE, feature_12 DOUBLE, feature_13 DOUBLE, feature_14 DOUBLE, feature_15 DOUBLE, feature_16 DOUBLE, feature_17 DOUBLE, feature_18 DOUBLE, feature_19 DOUBLE, target DOUBLE)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "model_info",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "model_info(model_name VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, target VARCHAR, n_features BIGINT, n_samples BIGINT, n_classes BIGINT, train_score DOUBLE, xgboost_version VARCHAR, created_at VARCHAR, features VARCHAR[])"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "partial_dependence",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "partial_dependence(data TABLE, model BLOB, model_name VARCHAR, grid_resolution BIGINT, feature VARCHAR) -> TABLE(feature_value DOUBLE, class BIGINT, partial_dependence DOUBLE)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "permutation_importance",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "permutation_importance(data TABLE, target VARCHAR, model BLOB, scoring VARCHAR, random_state BIGINT, n_repeats BIGINT, model_name VARCHAR) -> TABLE(feature VARCHAR, importance_mean DOUBLE, importance_std DOUBLE, rank INTEGER)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "predict",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "predict(data TABLE, with_proba BOOLEAN, output_margin BOOLEAN, model_name VARCHAR, pred_leaf BOOLEAN, model BLOB, id VARCHAR) -> TABLE(prediction DOUBLE)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "randomized_search",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "randomized_search(data TABLE, random_state BIGINT, n_iter BIGINT, model_name VARCHAR, target VARCHAR, id VARCHAR, estimator UNION(xgb_classifier STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_regressor STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_rf_classifier STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_rf_regressor STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[])), scoring VARCHAR, cv BIGINT) -> TABLE(estimator VARCHAR, params VARCHAR, mean_test_score DOUBLE, std_test_score DOUBLE, rank BIGINT, model BLOB)"
+          ],
+          "access": [
+            "write"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "wine",
+          "kinds": [
+            "function",
+            "table"
+          ],
+          "signatures": [
+            "TABLE(sample_id INTEGER, alcohol DOUBLE, malic_acid DOUBLE, ash DOUBLE, alcalinity_of_ash DOUBLE, magnesium DOUBLE, total_phenols DOUBLE, flavanoids DOUBLE, nonflavanoid_phenols DOUBLE, proanthocyanins DOUBLE, color_intensity DOUBLE, hue DOUBLE, od280_od315_of_diluted_wines DOUBLE, proline DOUBLE, target INTEGER, target_name VARCHAR)",
+            "wine() -> TABLE(sample_id INTEGER, alcohol DOUBLE, malic_acid DOUBLE, ash DOUBLE, alcalinity_of_ash DOUBLE, magnesium DOUBLE, total_phenols DOUBLE, flavanoids DOUBLE, nonflavanoid_phenols DOUBLE, proanthocyanins DOUBLE, color_intensity DOUBLE, hue DOUBLE, od280_od315_of_diluted_wines DOUBLE, proline DOUBLE, target INTEGER, target_name VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        }
+      ],
+      "issues": []
+    },
+    "current": {
+      "catalog_status": "verified",
+      "revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+      "catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de",
+      "collection_reconciled": true,
+      "denominator": 24,
+      "observed_objects": 24,
+      "required": 12,
+      "verified_count": 13,
+      "candidate_count": 0,
+      "fraction": 0.5416666666666666,
+      "meets_target": true,
+      "exact_runtime_count": 13,
+      "runtime_revisions": [
+        "eb4f1991e788801aa11d58e231f019f0cf613f44"
+      ],
+      "covered": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "cross_val_predict"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "cross_val_score"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "explain"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "feature_importance"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit_xgb_regressor"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "grid_search"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "list_models"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "make_regression"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "model_info"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "partial_dependence"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "permutation_importance"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "predict"
+        }
+      ],
+      "uncovered": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "breast_cancer"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "california_housing"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "diabetes"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "drop_model"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit_xgb_classifier"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit_xgb_rf_classifier"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit_xgb_rf_regressor"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "iris"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "make_classification"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "randomized_search"
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "wine"
+        }
+      ],
+      "objects": [
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "breast_cancer",
+          "kinds": [
+            "function",
+            "table"
+          ],
+          "signatures": [
+            "TABLE(sample_id INTEGER, mean_radius DOUBLE, mean_texture DOUBLE, mean_perimeter DOUBLE, mean_area DOUBLE, mean_smoothness DOUBLE, mean_compactness DOUBLE, mean_concavity DOUBLE, mean_concave_points DOUBLE, mean_symmetry DOUBLE, mean_fractal_dimension DOUBLE, radius_error DOUBLE, texture_error DOUBLE, perimeter_error DOUBLE, area_error DOUBLE, smoothness_error DOUBLE, compactness_error DOUBLE, concavity_error DOUBLE, concave_points_error DOUBLE, symmetry_error DOUBLE, fractal_dimension_error DOUBLE, worst_radius DOUBLE, worst_texture DOUBLE, worst_perimeter DOUBLE, worst_area DOUBLE, worst_smoothness DOUBLE, worst_compactness DOUBLE, worst_concavity DOUBLE, worst_concave_points DOUBLE, worst_symmetry DOUBLE, worst_fractal_dimension DOUBLE, target INTEGER, target_name VARCHAR)",
+            "breast_cancer() -> TABLE(sample_id INTEGER, mean_radius DOUBLE, mean_texture DOUBLE, mean_perimeter DOUBLE, mean_area DOUBLE, mean_smoothness DOUBLE, mean_compactness DOUBLE, mean_concavity DOUBLE, mean_concave_points DOUBLE, mean_symmetry DOUBLE, mean_fractal_dimension DOUBLE, radius_error DOUBLE, texture_error DOUBLE, perimeter_error DOUBLE, area_error DOUBLE, smoothness_error DOUBLE, compactness_error DOUBLE, concavity_error DOUBLE, concave_points_error DOUBLE, symmetry_error DOUBLE, fractal_dimension_error DOUBLE, worst_radius DOUBLE, worst_texture DOUBLE, worst_perimeter DOUBLE, worst_area DOUBLE, worst_smoothness DOUBLE, worst_compactness DOUBLE, worst_concavity DOUBLE, worst_concave_points DOUBLE, worst_symmetry DOUBLE, worst_fractal_dimension DOUBLE, target INTEGER, target_name VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "california_housing",
+          "kinds": [
+            "function",
+            "table"
+          ],
+          "signatures": [
+            "TABLE(sample_id INTEGER, medinc DOUBLE, houseage DOUBLE, averooms DOUBLE, avebedrms DOUBLE, population DOUBLE, aveoccup DOUBLE, latitude DOUBLE, longitude DOUBLE, target DOUBLE)",
+            "california_housing() -> TABLE(sample_id INTEGER, medinc DOUBLE, houseage DOUBLE, averooms DOUBLE, avebedrms DOUBLE, population DOUBLE, aveoccup DOUBLE, latitude DOUBLE, longitude DOUBLE, target DOUBLE)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "cross_val_predict",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "cross_val_predict(data TABLE, target VARCHAR, params VARCHAR, id VARCHAR, estimator VARCHAR, cv BIGINT) -> TABLE(prediction BIGINT)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "cross_val_score",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "cross_val_score(data TABLE, params VARCHAR, target VARCHAR, estimator VARCHAR, id VARCHAR, scoring VARCHAR, cv BIGINT) -> TABLE(fold BIGINT, score DOUBLE)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "diabetes",
+          "kinds": [
+            "function",
+            "table"
+          ],
+          "signatures": [
+            "TABLE(sample_id INTEGER, age DOUBLE, sex DOUBLE, bmi DOUBLE, bp DOUBLE, s1 DOUBLE, s2 DOUBLE, s3 DOUBLE, s4 DOUBLE, s5 DOUBLE, s6 DOUBLE, target DOUBLE)",
+            "diabetes() -> TABLE(sample_id INTEGER, age DOUBLE, sex DOUBLE, bmi DOUBLE, bp DOUBLE, s1 DOUBLE, s2 DOUBLE, s3 DOUBLE, s4 DOUBLE, s5 DOUBLE, s6 DOUBLE, target DOUBLE)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "drop_model",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "drop_model(model_name VARCHAR) -> TABLE(model_name VARCHAR, dropped BOOLEAN)"
+          ],
+          "access": [
+            "write"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "explain",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "explain(data TABLE, model_name VARCHAR, model BLOB, id VARCHAR) -> TABLE(feature VARCHAR, shap_value DOUBLE, base_value DOUBLE)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "feature_importance",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "feature_importance(model_name VARCHAR, model BLOB, importance_type VARCHAR) -> TABLE(feature VARCHAR, importance DOUBLE, rank INTEGER)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fit(data TABLE, target VARCHAR, params VARCHAR, model_name VARCHAR, id VARCHAR, estimator VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, n_samples BIGINT, n_features BIGINT, n_classes BIGINT, train_score DOUBLE, features VARCHAR[], model BLOB)"
+          ],
+          "access": [
+            "write"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit_xgb_classifier",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fit_xgb_classifier(data TABLE, subsample DOUBLE, reg_lambda DOUBLE, tree_method VARCHAR, target VARCHAR, reg_alpha DOUBLE, random_state BIGINT, n_estimators BIGINT, max_depth BIGINT, model_name VARCHAR, min_child_weight DOUBLE, gamma DOUBLE, learning_rate DOUBLE, booster VARCHAR, colsample_bytree DOUBLE, objective VARCHAR, id VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, n_samples BIGINT, n_features BIGINT, n_classes BIGINT, train_score DOUBLE, features VARCHAR[], model BLOB)"
+          ],
+          "access": [
+            "write"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit_xgb_regressor",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fit_xgb_regressor(data TABLE, subsample DOUBLE, reg_lambda DOUBLE, tree_method VARCHAR, target VARCHAR, reg_alpha DOUBLE, random_state BIGINT, n_estimators BIGINT, max_depth BIGINT, model_name VARCHAR, min_child_weight DOUBLE, gamma DOUBLE, learning_rate DOUBLE, booster VARCHAR, colsample_bytree DOUBLE, objective VARCHAR, id VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, n_samples BIGINT, n_features BIGINT, n_classes BIGINT, train_score DOUBLE, features VARCHAR[], model BLOB)"
+          ],
+          "access": [
+            "write"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit_xgb_rf_classifier",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fit_xgb_rf_classifier(data TABLE, subsample DOUBLE, reg_lambda DOUBLE, tree_method VARCHAR, target VARCHAR, reg_alpha DOUBLE, random_state BIGINT, n_estimators BIGINT, max_depth BIGINT, model_name VARCHAR, min_child_weight DOUBLE, gamma DOUBLE, learning_rate DOUBLE, booster VARCHAR, colsample_bytree DOUBLE, objective VARCHAR, id VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, n_samples BIGINT, n_features BIGINT, n_classes BIGINT, train_score DOUBLE, features VARCHAR[], model BLOB)"
+          ],
+          "access": [
+            "write"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "fit_xgb_rf_regressor",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "fit_xgb_rf_regressor(data TABLE, subsample DOUBLE, reg_lambda DOUBLE, tree_method VARCHAR, target VARCHAR, reg_alpha DOUBLE, random_state BIGINT, n_estimators BIGINT, max_depth BIGINT, model_name VARCHAR, min_child_weight DOUBLE, gamma DOUBLE, learning_rate DOUBLE, booster VARCHAR, colsample_bytree DOUBLE, objective VARCHAR, id VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, n_samples BIGINT, n_features BIGINT, n_classes BIGINT, train_score DOUBLE, features VARCHAR[], model BLOB)"
+          ],
+          "access": [
+            "write"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "grid_search",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "grid_search(data TABLE, model_name VARCHAR, target VARCHAR, estimator UNION(xgb_classifier STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_regressor STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_rf_classifier STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_rf_regressor STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[])), id VARCHAR, scoring VARCHAR, cv BIGINT) -> TABLE(estimator VARCHAR, params VARCHAR, mean_test_score DOUBLE, std_test_score DOUBLE, rank BIGINT, model BLOB)"
+          ],
+          "access": [
+            "write"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "iris",
+          "kinds": [
+            "function",
+            "table"
+          ],
+          "signatures": [
+            "TABLE(sample_id INTEGER, sepal_length_cm DOUBLE, sepal_width_cm DOUBLE, petal_length_cm DOUBLE, petal_width_cm DOUBLE, target INTEGER, target_name VARCHAR)",
+            "iris() -> TABLE(sample_id INTEGER, sepal_length_cm DOUBLE, sepal_width_cm DOUBLE, petal_length_cm DOUBLE, petal_width_cm DOUBLE, target INTEGER, target_name VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "list_models",
+          "kinds": [
+            "function",
+            "table"
+          ],
+          "signatures": [
+            "TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, target VARCHAR, n_features BIGINT, n_samples BIGINT, n_classes BIGINT, train_score DOUBLE, xgboost_version VARCHAR, created_at VARCHAR, features VARCHAR[])",
+            "list_models() -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, target VARCHAR, n_features BIGINT, n_samples BIGINT, n_classes BIGINT, train_score DOUBLE, xgboost_version VARCHAR, created_at VARCHAR, features VARCHAR[])"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "make_classification",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "make_classification(n_samples BIGINT, n_informative BIGINT, random_state BIGINT, n_features BIGINT, n_classes BIGINT) -> TABLE(sample_id INTEGER, feature_0 DOUBLE, feature_1 DOUBLE, feature_2 DOUBLE, feature_3 DOUBLE, feature_4 DOUBLE, feature_5 DOUBLE, feature_6 DOUBLE, feature_7 DOUBLE, feature_8 DOUBLE, feature_9 DOUBLE, feature_10 DOUBLE, feature_11 DOUBLE, feature_12 DOUBLE, feature_13 DOUBLE, feature_14 DOUBLE, feature_15 DOUBLE, feature_16 DOUBLE, feature_17 DOUBLE, feature_18 DOUBLE, feature_19 DOUBLE, target INTEGER)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "make_regression",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "make_regression(noise DOUBLE, n_samples BIGINT, n_informative BIGINT, random_state BIGINT, n_features BIGINT) -> TABLE(sample_id INTEGER, feature_0 DOUBLE, feature_1 DOUBLE, feature_2 DOUBLE, feature_3 DOUBLE, feature_4 DOUBLE, feature_5 DOUBLE, feature_6 DOUBLE, feature_7 DOUBLE, feature_8 DOUBLE, feature_9 DOUBLE, feature_10 DOUBLE, feature_11 DOUBLE, feature_12 DOUBLE, feature_13 DOUBLE, feature_14 DOUBLE, feature_15 DOUBLE, feature_16 DOUBLE, feature_17 DOUBLE, feature_18 DOUBLE, feature_19 DOUBLE, target DOUBLE)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "model_info",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "model_info(model_name VARCHAR) -> TABLE(model_name VARCHAR, estimator VARCHAR, task VARCHAR, target VARCHAR, n_features BIGINT, n_samples BIGINT, n_classes BIGINT, train_score DOUBLE, xgboost_version VARCHAR, created_at VARCHAR, features VARCHAR[])"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "partial_dependence",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "partial_dependence(data TABLE, model BLOB, model_name VARCHAR, grid_resolution BIGINT, feature VARCHAR) -> TABLE(feature_value DOUBLE, class BIGINT, partial_dependence DOUBLE)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "permutation_importance",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "permutation_importance(data TABLE, target VARCHAR, model BLOB, scoring VARCHAR, random_state BIGINT, n_repeats BIGINT, model_name VARCHAR) -> TABLE(feature VARCHAR, importance_mean DOUBLE, importance_std DOUBLE, rank INTEGER)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "predict",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "predict(data TABLE, with_proba BOOLEAN, output_margin BOOLEAN, model_name VARCHAR, pred_leaf BOOLEAN, model BLOB, id VARCHAR) -> TABLE(prediction DOUBLE)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "randomized_search",
+          "kinds": [
+            "function"
+          ],
+          "signatures": [
+            "randomized_search(data TABLE, random_state BIGINT, n_iter BIGINT, model_name VARCHAR, target VARCHAR, id VARCHAR, estimator UNION(xgb_classifier STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_regressor STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_rf_classifier STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_rf_regressor STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[])), scoring VARCHAR, cv BIGINT) -> TABLE(estimator VARCHAR, params VARCHAR, mean_test_score DOUBLE, std_test_score DOUBLE, rank BIGINT, model BLOB)"
+          ],
+          "access": [
+            "write"
+          ],
+          "authentication": [
+            "none"
+          ]
+        },
+        {
+          "schema": [
+            "main"
+          ],
+          "name": "wine",
+          "kinds": [
+            "function",
+            "table"
+          ],
+          "signatures": [
+            "TABLE(sample_id INTEGER, alcohol DOUBLE, malic_acid DOUBLE, ash DOUBLE, alcalinity_of_ash DOUBLE, magnesium DOUBLE, total_phenols DOUBLE, flavanoids DOUBLE, nonflavanoid_phenols DOUBLE, proanthocyanins DOUBLE, color_intensity DOUBLE, hue DOUBLE, od280_od315_of_diluted_wines DOUBLE, proline DOUBLE, target INTEGER, target_name VARCHAR)",
+            "wine() -> TABLE(sample_id INTEGER, alcohol DOUBLE, malic_acid DOUBLE, ash DOUBLE, alcalinity_of_ash DOUBLE, magnesium DOUBLE, total_phenols DOUBLE, flavanoids DOUBLE, nonflavanoid_phenols DOUBLE, proanthocyanins DOUBLE, color_intensity DOUBLE, hue DOUBLE, od280_od315_of_diluted_wines DOUBLE, proline DOUBLE, target INTEGER, target_name VARCHAR)"
+          ],
+          "access": [
+            "read"
+          ],
+          "authentication": [
+            "none"
+          ]
+        }
+      ],
+      "issues": []
+    }
+  },
+  "interface_drift": {
+    "known": true,
+    "current_only": [],
+    "released_only": [],
+    "changed": []
+  },
+  "notebooks": {
+    "01_evaluate_predictions_before_explaining_them.ipynb": {
+      "verified": true,
+      "issues": []
+    },
+    "02_three_questions_about_features.ipynb": {
+      "verified": true,
+      "issues": []
+    },
+    "03_selection_scores_and_new_rows.ipynb": {
+      "verified": true,
+      "issues": []
+    }
+  },
+  "examples": [
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "fit_xgb_regressor"
+      },
+      "notebook": "01_evaluate_predictions_before_explaining_them.ipynb",
+      "runtime_revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+      "runtime_catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "list_models"
+      },
+      "notebook": "01_evaluate_predictions_before_explaining_them.ipynb",
+      "runtime_revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+      "runtime_catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "model_info"
+      },
+      "notebook": "01_evaluate_predictions_before_explaining_them.ipynb",
+      "runtime_revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+      "runtime_catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "predict"
+      },
+      "notebook": "01_evaluate_predictions_before_explaining_them.ipynb",
+      "runtime_revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+      "runtime_catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "explain"
+      },
+      "notebook": "01_evaluate_predictions_before_explaining_them.ipynb",
+      "runtime_revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+      "runtime_catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "fit"
+      },
+      "notebook": "02_three_questions_about_features.ipynb",
+      "runtime_revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+      "runtime_catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "feature_importance"
+      },
+      "notebook": "02_three_questions_about_features.ipynb",
+      "runtime_revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+      "runtime_catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "permutation_importance"
+      },
+      "notebook": "02_three_questions_about_features.ipynb",
+      "runtime_revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+      "runtime_catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "partial_dependence"
+      },
+      "notebook": "02_three_questions_about_features.ipynb",
+      "runtime_revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+      "runtime_catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "make_regression"
+      },
+      "notebook": "03_selection_scores_and_new_rows.ipynb",
+      "runtime_revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+      "runtime_catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "cross_val_predict"
+      },
+      "notebook": "03_selection_scores_and_new_rows.ipynb",
+      "runtime_revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+      "runtime_catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "cross_val_score"
+      },
+      "notebook": "03_selection_scores_and_new_rows.ipynb",
+      "runtime_revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+      "runtime_catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+    },
+    {
+      "status": "verified",
+      "issues": [],
+      "verified_catalogs": [
+        "released",
+        "current"
+      ],
+      "object": {
+        "schema": [
+          "main"
+        ],
+        "name": "grid_search"
+      },
+      "notebook": "03_selection_scores_and_new_rows.ipynb",
+      "runtime_revision": "eb4f1991e788801aa11d58e231f019f0cf613f44",
+      "runtime_catalog_sha256": "8e8af5f38c13cc8c84dedc6bcee831a36104d6f9490bb7705ebd1d25d29c86de"
+    }
+  ],
+  "issues": []
+}

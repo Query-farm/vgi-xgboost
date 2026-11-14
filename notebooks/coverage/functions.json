@@ -1,0 +1,1228 @@
+{
+  "query": "SELECT * FROM duckdb_functions() WHERE database_name='xgboost' ORDER BY schema_name,function_name",
+  "captured_at": "2026-11-14T23:38:02.728271+00:00",
+  "columns": [
+    "database_name",
+    "database_oid",
+    "schema_name",
+    "function_name",
+    "alias_of",
+    "function_type",
+    "description",
+    "comment",
+    "tags",
+    "return_type",
+    "parameters",
+    "parameter_types",
+    "varargs",
+    "macro_definition",
+    "has_side_effects",
+    "internal",
+    "extension_name",
+    "function_oid",
+    "examples",
+    "stability",
+    "categories"
+  ],
+  "rows": [
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "breast_cancer",
+      null,
+      "table",
+      "Breast cancer Wisconsin diagnostic (569 samples, 30 features, 2 classes)",
+      null,
+      {
+        "vgi.category": "datasets",
+        "vgi.doc_llm": "Zero-argument table function returning the Wisconsin breast-cancer diagnostic dataset: 569 rows, one per tumour, with 30 numeric features summarising cell-nucleus geometry (mean / standard-error / worst of radius, texture, perimeter, area, concavity, ...), a binary `target` (0 = malignant, 1 = benign), `target_name`, and a `sample_id`. A standard binary-classification benchmark for fit/predict and probability/SHAP demos.",
+        "vgi.doc_md": "**Breast cancer (Wisconsin) dataset** \u2014 569 tumour samples, binary outcome.\n\n- `sample_id` `INTEGER` \u2014 0-based row index\n- 30 `DOUBLE` cell-nucleus features (mean / SE / worst of radius, texture, area, ...)\n- `target` `INTEGER` (0 malignant, 1 benign) and `target_name`\n\nTakes no arguments. The canonical binary-classification toy set.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT target_name, count(*) AS n, round(avg(mean_radius), 2) AS avg_mean_radius FROM xgboost.main.breast_cancer() GROUP BY target_name ORDER BY target_name\",\"description\":\"Tumour count and mean nucleus radius by diagnosis\"}]",
+        "vgi.keywords": "[\"datasets\", \"classification\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"sample_id\", \"type\": \"INTEGER\", \"description\": \"Row index within the dataset (0-based).\"}, {\"name\": \"mean_radius\", \"type\": \"DOUBLE\", \"description\": \"Feature: mean radius.\"}, {\"name\": \"mean_texture\", \"type\": \"DOUBLE\", \"description\": \"Feature: mean texture.\"}, {\"name\": \"mean_perimeter\", \"type\": \"DOUBLE\", \"description\": \"Feature: mean perimeter.\"}, {\"name\": \"mean_area\", \"type\": \"DOUBLE\", \"description\": \"Feature: mean area.\"}, {\"name\": \"mean_smoothness\", \"type\": \"DOUBLE\", \"description\": \"Feature: mean smoothness.\"}, {\"name\": \"mean_compactness\", \"type\": \"DOUBLE\", \"description\": \"Feature: mean compactness.\"}, {\"name\": \"mean_concavity\", \"type\": \"DOUBLE\", \"description\": \"Feature: mean concavity.\"}, {\"name\": \"mean_concave_points\", \"type\": \"DOUBLE\", \"description\": \"Feature: mean concave points.\"}, {\"name\": \"mean_symmetry\", \"type\": \"DOUBLE\", \"description\": \"Feature: mean symmetry.\"}, {\"name\": \"mean_fractal_dimension\", \"type\": \"DOUBLE\", \"description\": \"Feature: mean fractal dimension.\"}, {\"name\": \"radius_error\", \"type\": \"DOUBLE\", \"description\": \"Feature: radius error.\"}, {\"name\": \"texture_error\", \"type\": \"DOUBLE\", \"description\": \"Feature: texture error.\"}, {\"name\": \"perimeter_error\", \"type\": \"DOUBLE\", \"description\": \"Feature: perimeter error.\"}, {\"name\": \"area_error\", \"type\": \"DOUBLE\", \"description\": \"Feature: area error.\"}, {\"name\": \"smoothness_error\", \"type\": \"DOUBLE\", \"description\": \"Feature: smoothness error.\"}, {\"name\": \"compactness_error\", \"type\": \"DOUBLE\", \"description\": \"Feature: compactness error.\"}, {\"name\": \"concavity_error\", \"type\": \"DOUBLE\", \"description\": \"Feature: concavity error.\"}, {\"name\": \"concave_points_error\", \"type\": \"DOUBLE\", \"description\": \"Feature: concave points error.\"}, {\"name\": \"symmetry_error\", \"type\": \"DOUBLE\", \"description\": \"Feature: symmetry error.\"}, {\"name\": \"fractal_dimension_error\", \"type\": \"DOUBLE\", \"description\": \"Feature: fractal dimension error.\"}, {\"name\": \"worst_radius\", \"type\": \"DOUBLE\", \"description\": \"Feature: worst radius.\"}, {\"name\": \"worst_texture\", \"type\": \"DOUBLE\", \"description\": \"Feature: worst texture.\"}, {\"name\": \"worst_perimeter\", \"type\": \"DOUBLE\", \"description\": \"Feature: worst perimeter.\"}, {\"name\": \"worst_area\", \"type\": \"DOUBLE\", \"description\": \"Feature: worst area.\"}, {\"name\": \"worst_smoothness\", \"type\": \"DOUBLE\", \"description\": \"Feature: worst smoothness.\"}, {\"name\": \"worst_compactness\", \"type\": \"DOUBLE\", \"description\": \"Feature: worst compactness.\"}, {\"name\": \"worst_concavity\", \"type\": \"DOUBLE\", \"description\": \"Feature: worst concavity.\"}, {\"name\": \"worst_concave_points\", \"type\": \"DOUBLE\", \"description\": \"Feature: worst concave points.\"}, {\"name\": \"worst_symmetry\", \"type\": \"DOUBLE\", \"description\": \"Feature: worst symmetry.\"}, {\"name\": \"worst_fractal_dimension\", \"type\": \"DOUBLE\", \"description\": \"Feature: worst fractal dimension.\"}, {\"name\": \"target\", \"type\": \"INTEGER\", \"description\": \"Integer class label (0-based).\"}, {\"name\": \"target_name\", \"type\": \"VARCHAR\", \"description\": \"Human-readable class name (one of: malignant, benign).\"}]",
+        "vgi.title": "Breast Cancer"
+      },
+      null,
+      [],
+      [],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22726,
+      [
+        "SELECT target_name, count(*) AS n, round(avg(mean_radius), 2) AS avg_mean_radius FROM xgboost.main.breast_cancer() GROUP BY target_name ORDER BY target_name"
+      ],
+      null,
+      [
+        "datasets",
+        "classification"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "california_housing",
+      null,
+      "table",
+      "California housing prices (20640 districts, 8 features, regression)",
+      null,
+      {
+        "vgi.category": "datasets",
+        "vgi.doc_llm": "Zero-argument table function returning the California-housing regression dataset: 20,640 rows, one per 1990 census block group, with 8 numeric features (median income `medinc`, house age, average rooms/bedrooms, population, occupancy, latitude, longitude), a continuous `target` (median house value in $100,000s), and a `sample_id`. A large regression dataset; downloaded from scikit-learn on first use and cached locally.",
+        "vgi.doc_md": "**California housing dataset** \u2014 20,640 census block groups, regression.\n\n- `sample_id` `INTEGER` \u2014 0-based row index\n- 8 `DOUBLE` features (`medinc`, `houseage`, `averooms`, `latitude`, `longitude`, ...)\n- `target` `DOUBLE` \u2014 median house value (in $100k)\n\nTakes no arguments. Downloads on first use; a larger regression benchmark.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT count(*) AS n_districts, round(avg(target), 3) AS mean_value_100k FROM xgboost.main.california_housing()\",\"description\":\"District count and mean house value (downloads on first use)\"}]",
+        "vgi.keywords": "[\"datasets\", \"regression\", \"fetched\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"sample_id\", \"type\": \"INTEGER\", \"description\": \"Row index within the dataset (0-based).\"}, {\"name\": \"medinc\", \"type\": \"DOUBLE\", \"description\": \"Feature: MedInc.\"}, {\"name\": \"houseage\", \"type\": \"DOUBLE\", \"description\": \"Feature: HouseAge.\"}, {\"name\": \"averooms\", \"type\": \"DOUBLE\", \"description\": \"Feature: AveRooms.\"}, {\"name\": \"avebedrms\", \"type\": \"DOUBLE\", \"description\": \"Feature: AveBedrms.\"}, {\"name\": \"population\", \"type\": \"DOUBLE\", \"description\": \"Feature: Population.\"}, {\"name\": \"aveoccup\", \"type\": \"DOUBLE\", \"description\": \"Feature: AveOccup.\"}, {\"name\": \"latitude\", \"type\": \"DOUBLE\", \"description\": \"Feature: Latitude.\"}, {\"name\": \"longitude\", \"type\": \"DOUBLE\", \"description\": \"Feature: Longitude.\"}, {\"name\": \"target\", \"type\": \"DOUBLE\", \"description\": \"Continuous regression target.\"}]",
+        "vgi.title": "California Housing"
+      },
+      null,
+      [],
+      [],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22727,
+      [
+        "SELECT count(*) AS n_districts, round(avg(target), 3) AS mean_value_100k FROM xgboost.main.california_housing()"
+      ],
+      null,
+      [
+        "datasets",
+        "regression",
+        "fetched"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "cross_val_predict",
+      null,
+      "table",
+      "Out-of-fold cross-validated predictions (no model is stored)",
+      null,
+      {
+        "vgi.category": "models",
+        "vgi.doc_llm": "Computes out-of-fold cross-validated predictions for a training table without persisting any model. Each row is predicted by a model trained on the other folds (`cv :=` folds, default 5), so the result is an honest, leakage-free prediction per row \u2014 ideal for building a held-out prediction column to score with metrics or to stack. Name the label with `target :=`, pick the `estimator :=`, optionally carry an `id :=` through, and tune via JSON `params :=`. Classification labels of any dtype are decoded back to the original values.",
+        "vgi.doc_md": "**Cross-validated out-of-fold predictions** \u2014 no model is stored.\n\n- Each row is predicted by a model fit on the *other* folds (`cv :=`, default 5)\n- `estimator :=`, `target :=`, optional `id :=` passthrough, JSON `params :=`\n- Returns one `prediction` per input row (label or value), leakage-free\n\nUse it to make a held-out prediction column for metrics or model stacking.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT i.target_name AS actual_species, cv.prediction AS predicted_species, count(*) AS n_flowers FROM xgboost.main.cross_val_predict((SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target_name FROM xgboost.main.iris), estimator := 'xgb_classifier', target := 'target_name', id := 'sample_id', cv := 5) AS cv JOIN xgboost.main.iris AS i USING (sample_id) GROUP BY ALL ORDER BY actual_species, predicted_species\",\"description\":\"Out-of-fold confusion matrix for an XGBoost iris classifier: 5-fold cross_val_predict on the species name, joined back to the iris table by sample_id and counted per (actual, predicted) species pair. Only non-empty cells are returned; the off-diagonal rows are the held-out misclassifications, almost all of them versicolor/virginica mix-ups.\"},{\"sql\":\"SELECT d.bmi_quartile, count(*) AS patients, round(avg(abs(cv.prediction - d.target)), 1) AS oof_mae, round(avg(d.target), 1) AS mean_progression FROM xgboost.main.cross_val_predict((SELECT * FROM xgboost.main.diabetes), estimator := 'xgb_regressor', target := 'target', id := 'sample_id', cv := 5) AS cv JOIN (SELECT sample_id, target, ntile(4) OVER (ORDER BY bmi, sample_id) AS bmi_quartile FROM xgboost.main.diabetes) AS d USING (sample_id) GROUP BY d.bmi_quartile ORDER BY d.bmi_quartile\",\"description\":\"Where does an XGBoost regressor miss? 5-fold out-of-fold predictions on diabetes joined back to the patients, with the held-out mean absolute error and mean progression score per BMI quartile (1 = lowest BMI).\"},{\"sql\":\"SELECT sample_id, prediction FROM xgboost.main.cross_val_predict((SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target FROM xgboost.main.iris()), estimator => 'xgb_classifier', target => 'target', id => 'sample_id')\",\"description\":\"5-fold out-of-fold predictions on iris\"}]",
+        "vgi.keywords": "[\"models\", \"supervised\", \"evaluation\"]",
+        "vgi.result_dynamic_columns_md": "If `id :=` names a column it is carried through first; the prediction type follows the estimator task.\n\n### Classifier\n\n| Name | Type | Description |\n| --- | --- | --- |\n| sample_id | BIGINT | Column named by `id :=` (here `sample_id`), carried through first as-is. |\n| prediction | BIGINT | Out-of-fold class label (`VARCHAR` for string labels). |\n\n### Regressor\n\n| Name | Type | Description |\n| --- | --- | --- |\n| sample_id | BIGINT | Column named by `id :=` (here `sample_id`), carried through first as-is. |\n| prediction | DOUBLE | Out-of-fold predicted value. |",
+        "vgi.title": "Cross Val Predict"
+      },
+      null,
+      [
+        "data",
+        "target",
+        "params",
+        "id",
+        "estimator",
+        "cv"
+      ],
+      [
+        "TABLE",
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR",
+        "BIGINT"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22728,
+      [
+        "SELECT i.target_name AS actual_species, cv.prediction AS predicted_species, count(*) AS n_flowers FROM xgboost.main.cross_val_predict((SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target_name FROM xgboost.main.iris), estimator := 'xgb_classifier', target := 'target_name', id := 'sample_id', cv := 5) AS cv JOIN xgboost.main.iris AS i USING (sample_id) GROUP BY ALL ORDER BY actual_species, predicted_species",
+        "SELECT d.bmi_quartile, count(*) AS patients, round(avg(abs(cv.prediction - d.target)), 1) AS oof_mae, round(avg(d.target), 1) AS mean_progression FROM xgboost.main.cross_val_predict((SELECT * FROM xgboost.main.diabetes), estimator := 'xgb_regressor', target := 'target', id := 'sample_id', cv := 5) AS cv JOIN (SELECT sample_id, target, ntile(4) OVER (ORDER BY bmi, sample_id) AS bmi_quartile FROM xgboost.main.diabetes) AS d USING (sample_id) GROUP BY d.bmi_quartile ORDER BY d.bmi_quartile",
+        "SELECT sample_id, prediction FROM xgboost.main.cross_val_predict((SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target FROM xgboost.main.iris()), estimator => 'xgb_classifier', target => 'target', id => 'sample_id')"
+      ],
+      null,
+      [
+        "models",
+        "supervised",
+        "evaluation"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "cross_val_score",
+      null,
+      "table",
+      "Cross-validated held-out scores, one row per fold (no model is stored)",
+      null,
+      {
+        "vgi.category": "models",
+        "vgi.doc_llm": "Runs k-fold cross-validation and returns the held-out score for each fold (one `(fold, score)` row), without storing any model. Name the label with `target :=`, choose the `estimator :=`, set the number of folds with `cv :=` (default 5), and optionally pick a `scoring :=` metric (default: the estimator's own scorer \u2014 accuracy for classifiers, R^2 for regressors). Aggregate the rows (e.g. `avg(score)`) for a single cross-validated performance estimate or to compare estimators/hyperparameters.",
+        "vgi.doc_md": "**Cross-validated fold scores** \u2014 one row per fold, no model stored.\n\n- `estimator :=`, `target :=`, `cv :=` folds (default 5), optional `scoring :=`\n- Returns `(fold, score)` \u2014 the held-out score for each fold\n\nDefault scorer is the estimator's own (accuracy / R^2). Take `avg(score)` for a single cross-validated estimate.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT fold, score FROM xgboost.main.cross_val_score((SELECT sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target FROM xgboost.main.iris()), estimator => 'xgb_classifier', target => 'target')\",\"description\":\"5-fold accuracy of an XGBoost classifier on iris\"}]",
+        "vgi.keywords": "[\"models\", \"supervised\", \"evaluation\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"fold\", \"type\": \"BIGINT\", \"description\": \"Cross-validation fold index (0-based).\"}, {\"name\": \"score\", \"type\": \"DOUBLE\", \"description\": \"Held-out score for this fold.\"}]",
+        "vgi.title": "Cross Val Score"
+      },
+      null,
+      [
+        "data",
+        "params",
+        "target",
+        "estimator",
+        "id",
+        "scoring",
+        "cv"
+      ],
+      [
+        "TABLE",
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR",
+        "BIGINT"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22729,
+      [
+        "SELECT fold, score FROM xgboost.main.cross_val_score((SELECT sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target FROM xgboost.main.iris()), estimator => 'xgb_classifier', target => 'target')"
+      ],
+      null,
+      [
+        "models",
+        "supervised",
+        "evaluation"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "diabetes",
+      null,
+      "table",
+      "Diabetes progression regression (442 samples, 10 features)",
+      null,
+      {
+        "vgi.category": "datasets",
+        "vgi.doc_llm": "Zero-argument table function returning the diabetes regression dataset: 442 rows, one per patient, with 10 mean-centred, scaled baseline features (`age`, `sex`, `bmi`, blood pressure `bp`, and six serum measurements `s1`..`s6`), a continuous `target` quantifying disease progression one year after baseline, and a `sample_id`. A small regression benchmark \u2014 the default demo input for `explain` and `partial_dependence`.",
+        "vgi.doc_md": "**Diabetes dataset** \u2014 442 patients, continuous regression target.\n\n- `sample_id` `INTEGER` \u2014 0-based row index\n- 10 `DOUBLE` scaled baseline features (`age`, `sex`, `bmi`, `bp`, `s1`\u2013`s6`)\n- `target` `DOUBLE` \u2014 one-year disease-progression score\n\nTakes no arguments. A small regression toy set.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT count(*) AS n, round(avg(target), 1) AS mean_progression FROM xgboost.main.diabetes()\",\"description\":\"Patient count and mean disease-progression score\"}]",
+        "vgi.keywords": "[\"datasets\", \"regression\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"sample_id\", \"type\": \"INTEGER\", \"description\": \"Row index within the dataset (0-based).\"}, {\"name\": \"age\", \"type\": \"DOUBLE\", \"description\": \"Feature: age.\"}, {\"name\": \"sex\", \"type\": \"DOUBLE\", \"description\": \"Feature: sex.\"}, {\"name\": \"bmi\", \"type\": \"DOUBLE\", \"description\": \"Feature: bmi.\"}, {\"name\": \"bp\", \"type\": \"DOUBLE\", \"description\": \"Feature: bp.\"}, {\"name\": \"s1\", \"type\": \"DOUBLE\", \"description\": \"Feature: s1.\"}, {\"name\": \"s2\", \"type\": \"DOUBLE\", \"description\": \"Feature: s2.\"}, {\"name\": \"s3\", \"type\": \"DOUBLE\", \"description\": \"Feature: s3.\"}, {\"name\": \"s4\", \"type\": \"DOUBLE\", \"description\": \"Feature: s4.\"}, {\"name\": \"s5\", \"type\": \"DOUBLE\", \"description\": \"Feature: s5.\"}, {\"name\": \"s6\", \"type\": \"DOUBLE\", \"description\": \"Feature: s6.\"}, {\"name\": \"target\", \"type\": \"DOUBLE\", \"description\": \"Continuous regression target.\"}]",
+        "vgi.title": "Diabetes"
+      },
+      null,
+      [],
+      [],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22730,
+      [
+        "SELECT count(*) AS n, round(avg(target), 1) AS mean_progression FROM xgboost.main.diabetes()"
+      ],
+      null,
+      [
+        "datasets",
+        "regression"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "drop_model",
+      null,
+      "table",
+      "Delete a model from the registry",
+      null,
+      {
+        "vgi.category": "models",
+        "vgi.doc_llm": "Deletes a model from the registry by name (`drop_model('my_model')`) and returns one row `(model_name, dropped)` where `dropped` is true when a model was removed and false when the name did not exist. Idempotent and safe to call on an absent model. Use it to clean up models created by `fit`/`fit_<estimator>`/search with a `model_name`.",
+        "vgi.doc_md": "**Delete a stored model** \u2014 registry cleanup.\n\n- Call positionally: `drop_model('my_model')`\n- Returns `(model_name, dropped)`; `dropped` is false if the name did not exist\n\nIdempotent \u2014 safe on a missing model.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT model_name, dropped FROM xgboost.main.drop_model('iris_clf')\",\"description\":\"Delete a stored model and report whether it existed\"}]",
+        "vgi.keywords": "[\"models\", \"registry\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"model_name\", \"type\": \"VARCHAR\", \"description\": \"Name of the model.\"}, {\"name\": \"dropped\", \"type\": \"BOOLEAN\", \"description\": \"True if a model was deleted, False if it did not exist.\"}]",
+        "vgi.title": "Drop Model"
+      },
+      null,
+      [
+        "model_name"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22731,
+      [
+        "SELECT model_name, dropped FROM xgboost.main.drop_model('iris_clf')"
+      ],
+      null,
+      [
+        "models",
+        "registry"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "explain",
+      null,
+      "table",
+      "Per-row SHAP feature contributions, long format (row, [class], feature, shap_value, base_value)",
+      null,
+      {
+        "vgi.category": "interpretation",
+        "vgi.doc_llm": "Streams a table through a stored model and emits SHAP-style per-row prediction contributions (XGBoost's `pred_contribs`) in long format: one row per (input row, feature) with `feature`, `shap_value` (how much that feature pushed this row's raw margin away from the model's base), and `base_value` (the expected margin). Identify the model with `model_name :=` or `model :=` (a `BLOB`); name an `id :=` to tag every emitted row. For multiclass models an extra `class` column appears (one row per (row, class, feature)). Sum `shap_value` over a row's features and add `base_value` to recover the raw margin. Use it for local, per-prediction explanations.",
+        "vgi.doc_md": "**SHAP explanations** \u2014 per-row feature contributions, long format.\n\n- Identify the model with `model_name :=` or `model :=`; optional `id :=` passthrough\n- One row per (input row, feature): `feature`, `shap_value`, `base_value`\n- Multiclass adds a `class` `BIGINT` column (one row per (row, class, feature))\n\n`sum(shap_value) + base_value` = the row's raw margin. Local, per-prediction explanation.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT feature, round(avg(abs(shap_value)), 3) AS mean_abs_shap FROM xgboost.main.explain((SELECT * FROM xgboost.main.diabetes()), model_name => 'diab_reg', id => 'sample_id') GROUP BY feature ORDER BY mean_abs_shap DESC\",\"description\":\"Explain each row's prediction with per-feature contributions\"}]",
+        "vgi.keywords": "[\"models\", \"interpretation\", \"inference\"]",
+        "vgi.result_dynamic_columns_md": "Long format: one row per (input row, feature). If `id :=` names a column it is carried through first, and multiclass models add a `class` column (one row per input row, class and feature).\n\n### Binary classification or regression\n\n| Name | Type | Description |\n| --- | --- | --- |\n| sample_id | BIGINT | Column named by `id :=` (here `sample_id`), carried through first as-is. |\n| feature | VARCHAR | Feature column name. |\n| shap_value | DOUBLE | Contribution of the feature to the raw margin. |\n| base_value | DOUBLE | Model base (expected) raw-margin value. |\n\n### Multiclass classification\n\n| Name | Type | Description |\n| --- | --- | --- |\n| sample_id | BIGINT | Column named by `id :=` (here `sample_id`), carried through first as-is. |\n| class | BIGINT | Class index the contribution is for. |\n| feature | VARCHAR | Feature column name. |\n| shap_value | DOUBLE | Contribution of the feature to the raw margin for this class. |\n| base_value | DOUBLE | Model base (expected) raw-margin value for this class. |",
+        "vgi.title": "Explain"
+      },
+      null,
+      [
+        "data",
+        "model_name",
+        "model",
+        "id"
+      ],
+      [
+        "TABLE",
+        "VARCHAR",
+        "BLOB",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22732,
+      [
+        "SELECT feature, round(avg(abs(shap_value)), 3) AS mean_abs_shap FROM xgboost.main.explain((SELECT * FROM xgboost.main.diabetes()), model_name => 'diab_reg', id => 'sample_id') GROUP BY feature ORDER BY mean_abs_shap DESC"
+      ],
+      null,
+      [
+        "models",
+        "interpretation",
+        "inference"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "feature_importance",
+      null,
+      "table",
+      "Per-feature importance (weight/gain/cover) for a stored model, ranked",
+      null,
+      {
+        "vgi.category": "interpretation",
+        "vgi.doc_llm": "Returns the booster's built-in per-feature importance for a stored model, one ranked row per feature (`feature`, `importance`, `rank`; rank 1 = most important, already sorted descending). Identify the model positionally by name (`feature_importance('m')`) or with `model :=` (a `BLOB`). Choose the `importance_type :=` \u2014 `gain` (default; average loss reduction), `weight` (split count), `cover`, `total_gain`, or `total_cover`. Features never used in a split report importance 0. A fast, model-native ranking; for a model-agnostic alternative use `permutation_importance`.",
+        "vgi.doc_md": "**Booster feature importance** \u2014 model-native, ranked.\n\n- Identify the model by name (`feature_importance('m')`) or `model :=` `BLOB`\n- `importance_type :=` `gain` (default) | `weight` | `cover` | `total_gain` | `total_cover`\n- Returns `(feature, importance, rank)`, sorted by importance descending\n\nUnused features score 0. See `permutation_importance` for a model-agnostic measure.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT feature, importance, rank FROM xgboost.main.feature_importance('iris_clf', importance_type => 'gain') WHERE rank <= 3\",\"description\":\"Top three features by gain for a stored model\"}]",
+        "vgi.keywords": "[\"models\", \"interpretation\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"feature\", \"type\": \"VARCHAR\", \"description\": \"Feature column name.\"}, {\"name\": \"importance\", \"type\": \"DOUBLE\", \"description\": \"Importance score for the chosen importance_type.\"}, {\"name\": \"rank\", \"type\": \"INTEGER\", \"description\": \"1-based rank by importance (1 = most important).\"}]",
+        "vgi.title": "Feature Importance"
+      },
+      null,
+      [
+        "model_name",
+        "model",
+        "importance_type"
+      ],
+      [
+        "VARCHAR",
+        "BLOB",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22733,
+      [
+        "SELECT feature, importance, rank FROM xgboost.main.feature_importance('iris_clf', importance_type => 'gain') WHERE rank <= 3"
+      ],
+      null,
+      [
+        "models",
+        "interpretation"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "fit",
+      null,
+      "table",
+      "Fit an XGBoost estimator and store it in the model registry",
+      null,
+      {
+        "vgi.category": "models",
+        "vgi.doc_llm": "Buffers a training table, fits an XGBoost estimator (`estimator :=` one of `xgb_classifier`, `xgb_regressor`, `xgb_rf_classifier`, `xgb_rf_regressor`), and returns a one-row training summary whose `model` column is a self-contained `BLOB` (estimator + metadata). Name the label column with `target :=`; every other column except an optional `id :=` passthrough becomes a feature (strings/missing values handled natively). Hyperparameters go in a JSON `params :=` string. Pass `model_name :=` to also persist the model to the registry; otherwise it lives only in the returned `BLOB`. Feed that `BLOB` to `predict`/`explain`/`feature_importance` via `SET VARIABLE` + `getvariable()`.",
+        "vgi.doc_md": "**Fit an XGBoost model** \u2014 train and return a reusable model `BLOB`.\n\n- Input: a training table `(SELECT ...)`; name the label with `target :=`, optionally an `id :=` passthrough\n- `estimator :=` `xgb_classifier` | `xgb_regressor` | `xgb_rf_classifier` | `xgb_rf_regressor`; hyperparameters via JSON `params :=`\n- Returns one row: `estimator`, `task`, `n_samples`/`n_features`/`n_classes`, `train_score`, `features`, and the `model` `BLOB`\n- `model_name :=` also persists to the registry; classification labels may be any dtype (string/int/bool) and are decoded back on predict",
+        "vgi.example_queries": "[{\"sql\":\"SELECT model_name, task, n_samples, n_features, train_score FROM xgboost.main.fit((SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target FROM xgboost.main.iris()), model_name => 'iris_clf', estimator => 'xgb_classifier', target => 'target', id => 'sample_id')\",\"description\":\"Train an XGBoost classifier on iris and store it as 'iris_clf'\"}]",
+        "vgi.keywords": "[\"models\", \"supervised\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"model_name\", \"type\": \"VARCHAR\", \"description\": \"Name the model was stored under ('' if not persisted).\"}, {\"name\": \"estimator\", \"type\": \"VARCHAR\", \"description\": \"Estimator type used.\"}, {\"name\": \"task\", \"type\": \"VARCHAR\", \"description\": \"classification or regression.\"}, {\"name\": \"n_samples\", \"type\": \"BIGINT\", \"description\": \"Number of training rows.\"}, {\"name\": \"n_features\", \"type\": \"BIGINT\", \"description\": \"Number of features.\"}, {\"name\": \"n_classes\", \"type\": \"BIGINT\", \"description\": \"Number of classes (NULL for regression).\"}, {\"name\": \"train_score\", \"type\": \"DOUBLE\", \"description\": \"In-sample score (accuracy or R^2).\"}, {\"name\": \"features\", \"type\": \"VARCHAR[]\", \"description\": \"Ordered feature column names.\"}, {\"name\": \"model\", \"type\": \"BLOB\", \"description\": \"The fitted model as a self-contained `BLOB` (estimator + metadata).\"}]",
+        "vgi.title": "Fit"
+      },
+      null,
+      [
+        "data",
+        "target",
+        "params",
+        "model_name",
+        "id",
+        "estimator"
+      ],
+      [
+        "TABLE",
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22734,
+      [
+        "SELECT model_name, task, n_samples, n_features, train_score FROM xgboost.main.fit((SELECT sample_id, sepal_length_cm, sepal_width_cm, petal_length_cm, petal_width_cm, target FROM xgboost.main.iris()), model_name => 'iris_clf', estimator => 'xgb_classifier', target => 'target', id => 'sample_id')"
+      ],
+      null,
+      [
+        "models",
+        "supervised"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "fit_xgb_classifier",
+      null,
+      "table",
+      "Fit a xgb_classifier with typed hyperparameters; returns/stores the model",
+      null,
+      {
+        "vgi.category": "models",
+        "vgi.doc_llm": "Buffers a training table and fits a gradient-boosted decision-tree **classifier** (XGBoost's `XGBClassifier`) with its key hyperparameters exposed as typed, named SQL arguments (`n_estimators`, `max_depth`, `learning_rate`, `subsample`, `colsample_bytree`, `min_child_weight`, `gamma`, `reg_alpha`, `reg_lambda`, ...), each defaulting to XGBoost's own documented default. Equivalent to `fit(estimator := 'xgb_classifier', ...)` but discoverable and type-checked in the catalog instead of a JSON `params` blob. Name the classification label with `target :=`, optionally carry an `id :=` through; every other column is a feature (strings/missing values handled natively). Returns the same one-row summary with a reusable `model` `BLOB`, and persists to the registry when `model_name :=` is given. Feed the `BLOB` to `predict`/`explain`/`feature_importance`.",
+        "vgi.doc_md": "**`fit_xgb_classifier`** \u2014 fit a gradient-boosted decision-tree **classifier** (XGBoost's `XGBClassifier`) with typed hyperparameters.\n\n- Input: a training table `(SELECT ...)`; name the label with `target :=`, optional `id :=` passthrough\n- Hyperparameters are named, typed SQL args (`n_estimators`, `max_depth`, `learning_rate`, `subsample`, `reg_lambda`, ...) at XGBoost's real defaults\n- Returns the standard fit summary plus a reusable `model` `BLOB`; `model_name :=` also persists it\n\nThe discoverable, type-checked alternative to `fit(estimator := 'xgb_classifier', ...)`.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT n_samples, n_features, train_score FROM xgboost.main.fit_xgb_classifier((SELECT * FROM xgboost.main.iris()), target := 'target', id := 'sample_id', n_estimators := 200, max_depth := 6)\",\"description\":\"Train a xgb_classifier with named hyperparameters\"}]",
+        "vgi.keywords": "[\"models\", \"supervised\", \"typed\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"model_name\", \"type\": \"VARCHAR\", \"description\": \"Name the model was stored under ('' if not persisted).\"}, {\"name\": \"estimator\", \"type\": \"VARCHAR\", \"description\": \"Estimator type used.\"}, {\"name\": \"task\", \"type\": \"VARCHAR\", \"description\": \"classification or regression.\"}, {\"name\": \"n_samples\", \"type\": \"BIGINT\", \"description\": \"Number of training rows.\"}, {\"name\": \"n_features\", \"type\": \"BIGINT\", \"description\": \"Number of features.\"}, {\"name\": \"n_classes\", \"type\": \"BIGINT\", \"description\": \"Number of classes (NULL for regression).\"}, {\"name\": \"train_score\", \"type\": \"DOUBLE\", \"description\": \"In-sample score (accuracy or R^2).\"}, {\"name\": \"features\", \"type\": \"VARCHAR[]\", \"description\": \"Ordered feature column names.\"}, {\"name\": \"model\", \"type\": \"BLOB\", \"description\": \"The fitted model as a self-contained `BLOB` (estimator + metadata).\"}]",
+        "vgi.title": "Fit Xgb Classifier"
+      },
+      null,
+      [
+        "data",
+        "subsample",
+        "reg_lambda",
+        "tree_method",
+        "target",
+        "reg_alpha",
+        "random_state",
+        "n_estimators",
+        "max_depth",
+        "model_name",
+        "min_child_weight",
+        "gamma",
+        "learning_rate",
+        "booster",
+        "colsample_bytree",
+        "objective",
+        "id"
+      ],
+      [
+        "TABLE",
+        "DOUBLE",
+        "DOUBLE",
+        "VARCHAR",
+        "VARCHAR",
+        "DOUBLE",
+        "BIGINT",
+        "BIGINT",
+        "BIGINT",
+        "VARCHAR",
+        "DOUBLE",
+        "DOUBLE",
+        "DOUBLE",
+        "VARCHAR",
+        "DOUBLE",
+        "VARCHAR",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22735,
+      [
+        "SELECT n_samples, n_features, train_score FROM xgboost.main.fit_xgb_classifier((SELECT * FROM xgboost.main.iris()), target := 'target', id := 'sample_id', n_estimators := 200, max_depth := 6)"
+      ],
+      null,
+      [
+        "models",
+        "supervised",
+        "typed"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "fit_xgb_regressor",
+      null,
+      "table",
+      "Fit a xgb_regressor with typed hyperparameters; returns/stores the model",
+      null,
+      {
+        "vgi.category": "models",
+        "vgi.doc_llm": "Buffers a training table and fits a gradient-boosted decision-tree **regressor** (XGBoost's `XGBRegressor`) with its key hyperparameters exposed as typed, named SQL arguments (`n_estimators`, `max_depth`, `learning_rate`, `subsample`, `colsample_bytree`, `min_child_weight`, `gamma`, `reg_alpha`, `reg_lambda`, ...), each defaulting to XGBoost's own documented default. Equivalent to `fit(estimator := 'xgb_regressor', ...)` but discoverable and type-checked in the catalog instead of a JSON `params` blob. Name the regression label with `target :=`, optionally carry an `id :=` through; every other column is a feature (strings/missing values handled natively). Returns the same one-row summary with a reusable `model` `BLOB`, and persists to the registry when `model_name :=` is given. Feed the `BLOB` to `predict`/`explain`/`feature_importance`.",
+        "vgi.doc_md": "**`fit_xgb_regressor`** \u2014 fit a gradient-boosted decision-tree **regressor** (XGBoost's `XGBRegressor`) with typed hyperparameters.\n\n- Input: a training table `(SELECT ...)`; name the label with `target :=`, optional `id :=` passthrough\n- Hyperparameters are named, typed SQL args (`n_estimators`, `max_depth`, `learning_rate`, `subsample`, `reg_lambda`, ...) at XGBoost's real defaults\n- Returns the standard fit summary plus a reusable `model` `BLOB`; `model_name :=` also persists it\n\nThe discoverable, type-checked alternative to `fit(estimator := 'xgb_regressor', ...)`.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT n_samples, n_features, train_score FROM xgboost.main.fit_xgb_regressor((SELECT * FROM xgboost.main.iris()), target := 'target', id := 'sample_id', n_estimators := 200, max_depth := 6)\",\"description\":\"Train a xgb_regressor with named hyperparameters\"}]",
+        "vgi.keywords": "[\"models\", \"supervised\", \"typed\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"model_name\", \"type\": \"VARCHAR\", \"description\": \"Name the model was stored under ('' if not persisted).\"}, {\"name\": \"estimator\", \"type\": \"VARCHAR\", \"description\": \"Estimator type used.\"}, {\"name\": \"task\", \"type\": \"VARCHAR\", \"description\": \"classification or regression.\"}, {\"name\": \"n_samples\", \"type\": \"BIGINT\", \"description\": \"Number of training rows.\"}, {\"name\": \"n_features\", \"type\": \"BIGINT\", \"description\": \"Number of features.\"}, {\"name\": \"n_classes\", \"type\": \"BIGINT\", \"description\": \"Number of classes (NULL for regression).\"}, {\"name\": \"train_score\", \"type\": \"DOUBLE\", \"description\": \"In-sample score (accuracy or R^2).\"}, {\"name\": \"features\", \"type\": \"VARCHAR[]\", \"description\": \"Ordered feature column names.\"}, {\"name\": \"model\", \"type\": \"BLOB\", \"description\": \"The fitted model as a self-contained `BLOB` (estimator + metadata).\"}]",
+        "vgi.title": "Fit Xgb Regressor"
+      },
+      null,
+      [
+        "data",
+        "subsample",
+        "reg_lambda",
+        "tree_method",
+        "target",
+        "reg_alpha",
+        "random_state",
+        "n_estimators",
+        "max_depth",
+        "model_name",
+        "min_child_weight",
+        "gamma",
+        "learning_rate",
+        "booster",
+        "colsample_bytree",
+        "objective",
+        "id"
+      ],
+      [
+        "TABLE",
+        "DOUBLE",
+        "DOUBLE",
+        "VARCHAR",
+        "VARCHAR",
+        "DOUBLE",
+        "BIGINT",
+        "BIGINT",
+        "BIGINT",
+        "VARCHAR",
+        "DOUBLE",
+        "DOUBLE",
+        "DOUBLE",
+        "VARCHAR",
+        "DOUBLE",
+        "VARCHAR",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22736,
+      [
+        "SELECT n_samples, n_features, train_score FROM xgboost.main.fit_xgb_regressor((SELECT * FROM xgboost.main.iris()), target := 'target', id := 'sample_id', n_estimators := 200, max_depth := 6)"
+      ],
+      null,
+      [
+        "models",
+        "supervised",
+        "typed"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "fit_xgb_rf_classifier",
+      null,
+      "table",
+      "Fit a xgb_rf_classifier with typed hyperparameters; returns/stores the model",
+      null,
+      {
+        "vgi.category": "models",
+        "vgi.doc_llm": "Buffers a training table and fits a **random-forest classifier** built on XGBoost (`XGBRFClassifier`) \u2014 a single boosting round of bagged trees with its key hyperparameters exposed as typed, named SQL arguments (`n_estimators`, `max_depth`, `learning_rate`, `subsample`, `colsample_bytree`, `min_child_weight`, `gamma`, `reg_alpha`, `reg_lambda`, ...), each defaulting to XGBoost's own documented default. Equivalent to `fit(estimator := 'xgb_rf_classifier', ...)` but discoverable and type-checked in the catalog instead of a JSON `params` blob. Name the classification label with `target :=`, optionally carry an `id :=` through; every other column is a feature (strings/missing values handled natively). Returns the same one-row summary with a reusable `model` `BLOB`, and persists to the registry when `model_name :=` is given. Feed the `BLOB` to `predict`/`explain`/`feature_importance`.",
+        "vgi.doc_md": "**`fit_xgb_rf_classifier`** \u2014 fit a **random-forest classifier** built on XGBoost (`XGBRFClassifier`) \u2014 a single boosting round of bagged trees with typed hyperparameters.\n\n- Input: a training table `(SELECT ...)`; name the label with `target :=`, optional `id :=` passthrough\n- Hyperparameters are named, typed SQL args (`n_estimators`, `max_depth`, `learning_rate`, `subsample`, `reg_lambda`, ...) at XGBoost's real defaults\n- Returns the standard fit summary plus a reusable `model` `BLOB`; `model_name :=` also persists it\n\nThe discoverable, type-checked alternative to `fit(estimator := 'xgb_rf_classifier', ...)`.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT n_samples, n_features, train_score FROM xgboost.main.fit_xgb_rf_classifier((SELECT * FROM xgboost.main.iris()), target := 'target', id := 'sample_id', n_estimators := 200, max_depth := 6)\",\"description\":\"Train a xgb_rf_classifier with named hyperparameters\"}]",
+        "vgi.keywords": "[\"models\", \"supervised\", \"typed\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"model_name\", \"type\": \"VARCHAR\", \"description\": \"Name the model was stored under ('' if not persisted).\"}, {\"name\": \"estimator\", \"type\": \"VARCHAR\", \"description\": \"Estimator type used.\"}, {\"name\": \"task\", \"type\": \"VARCHAR\", \"description\": \"classification or regression.\"}, {\"name\": \"n_samples\", \"type\": \"BIGINT\", \"description\": \"Number of training rows.\"}, {\"name\": \"n_features\", \"type\": \"BIGINT\", \"description\": \"Number of features.\"}, {\"name\": \"n_classes\", \"type\": \"BIGINT\", \"description\": \"Number of classes (NULL for regression).\"}, {\"name\": \"train_score\", \"type\": \"DOUBLE\", \"description\": \"In-sample score (accuracy or R^2).\"}, {\"name\": \"features\", \"type\": \"VARCHAR[]\", \"description\": \"Ordered feature column names.\"}, {\"name\": \"model\", \"type\": \"BLOB\", \"description\": \"The fitted model as a self-contained `BLOB` (estimator + metadata).\"}]",
+        "vgi.title": "Fit Xgb Rf Classifier"
+      },
+      null,
+      [
+        "data",
+        "subsample",
+        "reg_lambda",
+        "tree_method",
+        "target",
+        "reg_alpha",
+        "random_state",
+        "n_estimators",
+        "max_depth",
+        "model_name",
+        "min_child_weight",
+        "gamma",
+        "learning_rate",
+        "booster",
+        "colsample_bytree",
+        "objective",
+        "id"
+      ],
+      [
+        "TABLE",
+        "DOUBLE",
+        "DOUBLE",
+        "VARCHAR",
+        "VARCHAR",
+        "DOUBLE",
+        "BIGINT",
+        "BIGINT",
+        "BIGINT",
+        "VARCHAR",
+        "DOUBLE",
+        "DOUBLE",
+        "DOUBLE",
+        "VARCHAR",
+        "DOUBLE",
+        "VARCHAR",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22737,
+      [
+        "SELECT n_samples, n_features, train_score FROM xgboost.main.fit_xgb_rf_classifier((SELECT * FROM xgboost.main.iris()), target := 'target', id := 'sample_id', n_estimators := 200, max_depth := 6)"
+      ],
+      null,
+      [
+        "models",
+        "supervised",
+        "typed"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "fit_xgb_rf_regressor",
+      null,
+      "table",
+      "Fit a xgb_rf_regressor with typed hyperparameters; returns/stores the model",
+      null,
+      {
+        "vgi.category": "models",
+        "vgi.doc_llm": "Buffers a training table and fits a **random-forest regressor** built on XGBoost (`XGBRFRegressor`) \u2014 a single boosting round of bagged trees with its key hyperparameters exposed as typed, named SQL arguments (`n_estimators`, `max_depth`, `learning_rate`, `subsample`, `colsample_bytree`, `min_child_weight`, `gamma`, `reg_alpha`, `reg_lambda`, ...), each defaulting to XGBoost's own documented default. Equivalent to `fit(estimator := 'xgb_rf_regressor', ...)` but discoverable and type-checked in the catalog instead of a JSON `params` blob. Name the regression label with `target :=`, optionally carry an `id :=` through; every other column is a feature (strings/missing values handled natively). Returns the same one-row summary with a reusable `model` `BLOB`, and persists to the registry when `model_name :=` is given. Feed the `BLOB` to `predict`/`explain`/`feature_importance`.",
+        "vgi.doc_md": "**`fit_xgb_rf_regressor`** \u2014 fit a **random-forest regressor** built on XGBoost (`XGBRFRegressor`) \u2014 a single boosting round of bagged trees with typed hyperparameters.\n\n- Input: a training table `(SELECT ...)`; name the label with `target :=`, optional `id :=` passthrough\n- Hyperparameters are named, typed SQL args (`n_estimators`, `max_depth`, `learning_rate`, `subsample`, `reg_lambda`, ...) at XGBoost's real defaults\n- Returns the standard fit summary plus a reusable `model` `BLOB`; `model_name :=` also persists it\n\nThe discoverable, type-checked alternative to `fit(estimator := 'xgb_rf_regressor', ...)`.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT n_samples, n_features, train_score FROM xgboost.main.fit_xgb_rf_regressor((SELECT * FROM xgboost.main.iris()), target := 'target', id := 'sample_id', n_estimators := 200, max_depth := 6)\",\"description\":\"Train a xgb_rf_regressor with named hyperparameters\"}]",
+        "vgi.keywords": "[\"models\", \"supervised\", \"typed\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"model_name\", \"type\": \"VARCHAR\", \"description\": \"Name the model was stored under ('' if not persisted).\"}, {\"name\": \"estimator\", \"type\": \"VARCHAR\", \"description\": \"Estimator type used.\"}, {\"name\": \"task\", \"type\": \"VARCHAR\", \"description\": \"classification or regression.\"}, {\"name\": \"n_samples\", \"type\": \"BIGINT\", \"description\": \"Number of training rows.\"}, {\"name\": \"n_features\", \"type\": \"BIGINT\", \"description\": \"Number of features.\"}, {\"name\": \"n_classes\", \"type\": \"BIGINT\", \"description\": \"Number of classes (NULL for regression).\"}, {\"name\": \"train_score\", \"type\": \"DOUBLE\", \"description\": \"In-sample score (accuracy or R^2).\"}, {\"name\": \"features\", \"type\": \"VARCHAR[]\", \"description\": \"Ordered feature column names.\"}, {\"name\": \"model\", \"type\": \"BLOB\", \"description\": \"The fitted model as a self-contained `BLOB` (estimator + metadata).\"}]",
+        "vgi.title": "Fit Xgb Rf Regressor"
+      },
+      null,
+      [
+        "data",
+        "subsample",
+        "reg_lambda",
+        "tree_method",
+        "target",
+        "reg_alpha",
+        "random_state",
+        "n_estimators",
+        "max_depth",
+        "model_name",
+        "min_child_weight",
+        "gamma",
+        "learning_rate",
+        "booster",
+        "colsample_bytree",
+        "objective",
+        "id"
+      ],
+      [
+        "TABLE",
+        "DOUBLE",
+        "DOUBLE",
+        "VARCHAR",
+        "VARCHAR",
+        "DOUBLE",
+        "BIGINT",
+        "BIGINT",
+        "BIGINT",
+        "VARCHAR",
+        "DOUBLE",
+        "DOUBLE",
+        "DOUBLE",
+        "VARCHAR",
+        "DOUBLE",
+        "VARCHAR",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22738,
+      [
+        "SELECT n_samples, n_features, train_score FROM xgboost.main.fit_xgb_rf_regressor((SELECT * FROM xgboost.main.iris()), target := 'target', id := 'sample_id', n_estimators := 200, max_depth := 6)"
+      ],
+      null,
+      [
+        "models",
+        "supervised",
+        "typed"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "grid_search",
+      null,
+      "table",
+      "Cross-validated grid search over an XGBoost estimator's hyperparameters",
+      null,
+      {
+        "vgi.category": "tuning",
+        "vgi.doc_llm": "Runs scikit-learn's `GridSearchCV` over a training table and returns the cross-validation leaderboard \u2014 one row per hyperparameter combination tried, with its `params` (JSON), `mean_test_score`, `std_test_score`, and `rank` (1 = best). The estimator and its grid are one tagged-union argument: `estimator := union_value(<estimator> := {param: [values], ...})`, where the union tag picks the estimator and each member exposes only that estimator's hyperparameters; omitted params stay at their default. Set `target :=`, `cv :=` folds, optional `scoring :=`. The refit best model rides as a `model` `BLOB` on the rank-1 row \u2014 grab it with `WHERE model IS NOT NULL`; pass `model_name :=` to also persist it.",
+        "vgi.doc_md": "**Cross-validated grid search** \u2014 exhaustive hyperparameter sweep.\n\n- `estimator := union_value(<estimator> := {param: [values], ...})` (a discriminated union; only that estimator's params are exposed)\n- `target :=`, `cv :=` folds, optional `scoring :=`, optional `model_name :=`\n- Returns the leaderboard: `params`, `mean_test_score`, `std_test_score`, `rank`\n\nThe refit best model is a `model` `BLOB` on the rank-1 row \u2014 `WHERE model IS NOT NULL`.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT params, mean_test_score, rank FROM xgboost.main.grid_search((SELECT * FROM xgboost.main.iris()), target := 'target', id := 'sample_id', estimator := union_value(xgb_classifier := {'n_estimators': [50, 100], 'max_depth': [3, 5]})) ORDER BY rank\",\"description\":\"Grid-search an XGBoost classifier on iris\"}]",
+        "vgi.keywords": "[\"models\", \"supervised\", \"tuning\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"estimator\", \"type\": \"VARCHAR\", \"description\": \"Estimator that was searched.\"}, {\"name\": \"params\", \"type\": \"VARCHAR\", \"description\": \"This combination's hyperparameters (JSON).\"}, {\"name\": \"mean_test_score\", \"type\": \"DOUBLE\", \"description\": \"Mean cross-validated score.\"}, {\"name\": \"std_test_score\", \"type\": \"DOUBLE\", \"description\": \"Std-dev of the cross-validated score.\"}, {\"name\": \"rank\", \"type\": \"BIGINT\", \"description\": \"Rank by mean score (1 = best).\"}, {\"name\": \"model\", \"type\": \"BLOB\", \"description\": \"The refit best model as a BLOB (only on the rank-1 row).\"}]",
+        "vgi.title": "Grid Search"
+      },
+      null,
+      [
+        "data",
+        "model_name",
+        "target",
+        "estimator",
+        "id",
+        "scoring",
+        "cv"
+      ],
+      [
+        "TABLE",
+        "VARCHAR",
+        "VARCHAR",
+        "UNION(xgb_classifier STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_regressor STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_rf_classifier STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_rf_regressor STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]))",
+        "VARCHAR",
+        "VARCHAR",
+        "BIGINT"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22739,
+      [
+        "SELECT params, mean_test_score, rank FROM xgboost.main.grid_search((SELECT * FROM xgboost.main.iris()), target := 'target', id := 'sample_id', estimator := union_value(xgb_classifier := {'n_estimators': [50, 100], 'max_depth': [3, 5]})) ORDER BY rank"
+      ],
+      null,
+      [
+        "models",
+        "supervised",
+        "tuning"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "iris",
+      null,
+      "table",
+      "Fisher's iris dataset (150 samples, 4 features, 3 species)",
+      null,
+      {
+        "vgi.category": "datasets",
+        "vgi.doc_llm": "Zero-argument table function returning Fisher's classic iris dataset: 150 rows, four numeric flower measurements in centimetres (`sepal_length_cm`, `sepal_width_cm`, `petal_length_cm`, `petal_width_cm`), an integer `target` (0/1/2), a human-readable `target_name` species, and a 0-based `sample_id`. It is the default demo input for nearly every other function in this worker (fit/predict, search, importance). Use it as a small, well-separated 3-class benchmark or to smoke-test an XGBoost pipeline end to end.",
+        "vgi.doc_md": "**Iris dataset** \u2014 150 flowers, 4 measurements, 3 species (the canonical ML toy set).\n\n- `sample_id` `INTEGER` \u2014 0-based row index\n- four `*_cm` `DOUBLE` feature columns (sepal/petal length & width)\n- `target` `INTEGER` (0\u20132) and `target_name` the species name\n\nTakes no arguments. The go-to small, balanced 3-class classification demo and the input used in most examples here.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT target_name, count(*) AS n FROM xgboost.main.iris() GROUP BY ALL ORDER BY target_name\",\"description\":\"Samples per iris species\"},{\"sql\":\"SELECT target_name, avg(petal_length_cm) FROM xgboost.main.iris() GROUP BY target_name\",\"description\":\"Mean petal length per species\"}]",
+        "vgi.keywords": "[\"datasets\", \"classification\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"sample_id\", \"type\": \"INTEGER\", \"description\": \"Row index within the dataset (0-based).\"}, {\"name\": \"sepal_length_cm\", \"type\": \"DOUBLE\", \"description\": \"Feature: sepal length (cm).\"}, {\"name\": \"sepal_width_cm\", \"type\": \"DOUBLE\", \"description\": \"Feature: sepal width (cm).\"}, {\"name\": \"petal_length_cm\", \"type\": \"DOUBLE\", \"description\": \"Feature: petal length (cm).\"}, {\"name\": \"petal_width_cm\", \"type\": \"DOUBLE\", \"description\": \"Feature: petal width (cm).\"}, {\"name\": \"target\", \"type\": \"INTEGER\", \"description\": \"Integer class label (0-based).\"}, {\"name\": \"target_name\", \"type\": \"VARCHAR\", \"description\": \"Human-readable class name (one of: setosa, versicolor, virginica).\"}]",
+        "vgi.title": "Iris"
+      },
+      null,
+      [],
+      [],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22740,
+      [
+        "SELECT target_name, count(*) AS n FROM xgboost.main.iris() GROUP BY ALL ORDER BY target_name",
+        "SELECT target_name, avg(petal_length_cm) FROM xgboost.main.iris() GROUP BY target_name"
+      ],
+      null,
+      [
+        "datasets",
+        "classification"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "list_models",
+      null,
+      "table",
+      "List all models in the registry",
+      null,
+      {
+        "vgi.category": "models",
+        "vgi.doc_llm": "Zero-argument table function listing every model persisted to the registry (by `fit` / `fit_<estimator>` / search with a `model_name`). One row per model: `model_name`, `estimator`, `task`, `target`, training shape (`n_features`/`n_samples`/`n_classes`), `train_score`, `xgboost_version`, `created_at`, and the ordered `features` list. Query it to discover what is available to `predict`/`explain`/`feature_importance`.",
+        "vgi.doc_md": "**Model registry listing** \u2014 every saved model, one row each.\n\n- `model_name`, `estimator`, `task`, `target`\n- `n_features` / `n_samples` / `n_classes`, `train_score`\n- `xgboost_version`, `created_at`, `features`\n\nTakes no arguments. Use it to find models to score with `predict`.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT model_name, estimator, train_score FROM xgboost.main.list_models() ORDER BY model_name\",\"description\":\"Stored models with their estimator and training score\"}]",
+        "vgi.keywords": "[\"models\", \"registry\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"model_name\", \"type\": \"VARCHAR\", \"description\": \"Stored model name.\"}, {\"name\": \"estimator\", \"type\": \"VARCHAR\", \"description\": \"Estimator type.\"}, {\"name\": \"task\", \"type\": \"VARCHAR\", \"description\": \"classification or regression.\"}, {\"name\": \"target\", \"type\": \"VARCHAR\", \"description\": \"Target column the model was trained on.\"}, {\"name\": \"n_features\", \"type\": \"BIGINT\", \"description\": \"Number of features.\"}, {\"name\": \"n_samples\", \"type\": \"BIGINT\", \"description\": \"Number of training rows.\"}, {\"name\": \"n_classes\", \"type\": \"BIGINT\", \"description\": \"Number of classes (NULL for regression).\"}, {\"name\": \"train_score\", \"type\": \"DOUBLE\", \"description\": \"In-sample training score.\"}, {\"name\": \"xgboost_version\", \"type\": \"VARCHAR\", \"description\": \"xgboost version used to fit.\"}, {\"name\": \"created_at\", \"type\": \"VARCHAR\", \"description\": \"UTC timestamp the model was stored.\"}, {\"name\": \"features\", \"type\": \"VARCHAR[]\", \"description\": \"Ordered feature column names.\"}]",
+        "vgi.title": "List Models"
+      },
+      null,
+      [],
+      [],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22741,
+      [
+        "SELECT model_name, estimator, train_score FROM xgboost.main.list_models() ORDER BY model_name"
+      ],
+      null,
+      [
+        "models",
+        "registry"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "make_classification",
+      null,
+      "table",
+      "Generate a synthetic classification dataset",
+      null,
+      {
+        "vgi.category": "datasets",
+        "vgi.doc_llm": "Table function that synthesises a random n-class classification problem (scikit-learn's `make_classification`). Control the shape with `n_samples`, `n_features`, `n_informative`, `n_classes`, and `random_state`; the output schema has a `sample_id`, one `feature_<i>` `DOUBLE` column per feature, and an integer `target`. Use it to generate reproducible training data of an arbitrary size/dimensionality for fit/predict, search, or benchmarks without loading a real dataset.",
+        "vgi.doc_md": "**Synthetic classification generator** \u2014 a random n-class problem.\n\n- Args: `n_samples`, `n_features`, `n_informative`, `n_classes`, `random_state`\n- `sample_id` `INTEGER`, `target` `INTEGER` (0-based label)\n- one `feature_<i>` `DOUBLE` column per feature (width set by `n_features`)\n\nReproducible for a fixed `random_state`; great for sizing/stress demos.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT target, count(*) AS n FROM xgboost.main.make_classification(n_samples => 500, n_features => 5, n_classes => 3) GROUP BY target ORDER BY target\",\"description\":\"Class balance of 500 generated rows with 5 features and 3 classes\"}]",
+        "vgi.keywords": "[\"datasets\", \"synthetic\", \"classification\"]",
+        "vgi.result_dynamic_columns_md": "The number of `feature_<i>` columns is set by `n_features`; every other column is fixed.\n\n### With n_features := 5 (one feature_<i> column per feature in general)\n\n| Name | Type | Description |\n| --- | --- | --- |\n| sample_id | INTEGER | Row index within the generated sample (0-based). |\n| feature_0 | DOUBLE | Generated feature 0. |\n| feature_1 | DOUBLE | Generated feature 1. |\n| feature_2 | DOUBLE | Generated feature 2. |\n| feature_3 | DOUBLE | Generated feature 3. |\n| feature_4 | DOUBLE | Generated feature 4. |\n| target | INTEGER | Integer class label (0-based). |",
+        "vgi.title": "Make Classification"
+      },
+      null,
+      [
+        "n_samples",
+        "n_informative",
+        "random_state",
+        "n_features",
+        "n_classes"
+      ],
+      [
+        "BIGINT",
+        "BIGINT",
+        "BIGINT",
+        "BIGINT",
+        "BIGINT"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22742,
+      [
+        "SELECT target, count(*) AS n FROM xgboost.main.make_classification(n_samples => 500, n_features => 5, n_classes => 3) GROUP BY target ORDER BY target"
+      ],
+      null,
+      [
+        "datasets",
+        "synthetic",
+        "classification"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "make_regression",
+      null,
+      "table",
+      "Generate a synthetic regression dataset",
+      null,
+      {
+        "vgi.category": "datasets",
+        "vgi.doc_llm": "Table function that synthesises a random linear regression problem (scikit-learn's `make_regression`). Control the shape with `n_samples`, `n_features`, `n_informative`, `noise`, and `random_state`; the output schema has a `sample_id`, one `feature_<i>` `DOUBLE` column per feature, and a continuous `DOUBLE` `target`. Use it to generate reproducible regression data of an arbitrary size with a tunable noise level for fit/predict, search, or interpretation demos.",
+        "vgi.doc_md": "**Synthetic regression generator** \u2014 a random linear problem with optional noise.\n\n- Args: `n_samples`, `n_features`, `n_informative`, `noise`, `random_state`\n- `sample_id` `INTEGER`, `target` `DOUBLE` (continuous)\n- one `feature_<i>` `DOUBLE` column per feature (width set by `n_features`)\n\n`noise` controls the output's standard deviation; reproducible for a fixed seed.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT count(*) AS n, round(stddev(target), 2) AS target_sd FROM xgboost.main.make_regression(n_samples => 500, n_features => 4, noise => 5.0)\",\"description\":\"Size and target spread of 500 generated rows with 4 features\"}]",
+        "vgi.keywords": "[\"datasets\", \"synthetic\", \"regression\"]",
+        "vgi.result_dynamic_columns_md": "The number of `feature_<i>` columns is set by `n_features`; every other column is fixed.\n\n### With n_features := 4 (one feature_<i> column per feature in general)\n\n| Name | Type | Description |\n| --- | --- | --- |\n| sample_id | INTEGER | Row index within the generated sample (0-based). |\n| feature_0 | DOUBLE | Generated feature 0. |\n| feature_1 | DOUBLE | Generated feature 1. |\n| feature_2 | DOUBLE | Generated feature 2. |\n| feature_3 | DOUBLE | Generated feature 3. |\n| target | DOUBLE | Continuous regression target. |",
+        "vgi.title": "Make Regression"
+      },
+      null,
+      [
+        "noise",
+        "n_samples",
+        "n_informative",
+        "random_state",
+        "n_features"
+      ],
+      [
+        "DOUBLE",
+        "BIGINT",
+        "BIGINT",
+        "BIGINT",
+        "BIGINT"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22743,
+      [
+        "SELECT count(*) AS n, round(stddev(target), 2) AS target_sd FROM xgboost.main.make_regression(n_samples => 500, n_features => 4, noise => 5.0)"
+      ],
+      null,
+      [
+        "datasets",
+        "synthetic",
+        "regression"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "model_info",
+      null,
+      "table",
+      "Describe a single stored model (one row, empty if absent)",
+      null,
+      {
+        "vgi.category": "models",
+        "vgi.doc_llm": "Returns the registry metadata for one model named positionally (`model_info('my_model')`): a single row with `model_name`, `estimator`, `task`, `target`, training shape (`n_features`/`n_samples`/`n_classes`), `train_score`, `xgboost_version`, `created_at`, and the ordered `features` list. Emits zero rows if the model does not exist, so it never errors on a missing name. Use it to inspect a specific saved model before predicting.",
+        "vgi.doc_md": "**Describe one stored model** \u2014 its registry metadata.\n\n- Call positionally: `model_info('my_model')`\n- One row: `estimator`, `task`, `target`, shape, `train_score`, `xgboost_version`, `created_at`, `features`\n\nReturns no rows if the name is absent (never errors).",
+        "vgi.example_queries": "[{\"sql\":\"SELECT estimator, task, target, n_features, train_score FROM xgboost.main.model_info('iris_clf')\",\"description\":\"Show one stored model's training metadata\"}]",
+        "vgi.keywords": "[\"models\", \"registry\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"model_name\", \"type\": \"VARCHAR\", \"description\": \"Stored model name.\"}, {\"name\": \"estimator\", \"type\": \"VARCHAR\", \"description\": \"Estimator type.\"}, {\"name\": \"task\", \"type\": \"VARCHAR\", \"description\": \"classification or regression.\"}, {\"name\": \"target\", \"type\": \"VARCHAR\", \"description\": \"Target column the model was trained on.\"}, {\"name\": \"n_features\", \"type\": \"BIGINT\", \"description\": \"Number of features.\"}, {\"name\": \"n_samples\", \"type\": \"BIGINT\", \"description\": \"Number of training rows.\"}, {\"name\": \"n_classes\", \"type\": \"BIGINT\", \"description\": \"Number of classes (NULL for regression).\"}, {\"name\": \"train_score\", \"type\": \"DOUBLE\", \"description\": \"In-sample training score.\"}, {\"name\": \"xgboost_version\", \"type\": \"VARCHAR\", \"description\": \"xgboost version used to fit.\"}, {\"name\": \"created_at\", \"type\": \"VARCHAR\", \"description\": \"UTC timestamp the model was stored.\"}, {\"name\": \"features\", \"type\": \"VARCHAR[]\", \"description\": \"Ordered feature column names.\"}]",
+        "vgi.title": "Model Info"
+      },
+      null,
+      [
+        "model_name"
+      ],
+      [
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22744,
+      [
+        "SELECT estimator, task, target, n_features, train_score FROM xgboost.main.model_info('iris_clf')"
+      ],
+      null,
+      [
+        "models",
+        "registry"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "partial_dependence",
+      null,
+      "table",
+      "How a stored model's average prediction changes as one feature varies over a grid",
+      null,
+      {
+        "vgi.category": "interpretation",
+        "vgi.doc_llm": "Computes the partial-dependence curve for one numeric feature: sweeps `feature :=` over a grid of `grid_resolution :=` points and reports the model's average prediction at each value, holding the rest of the buffered background table fixed. Returns `(feature_value, class, partial_dependence)` ordered along the grid; `class` is NULL for regression and the single binary curve, and is the class index (one curve per class) for multiclass. Identify the model with `model_name :=` or `model :=`. Numeric features only (categorical features raise a clear error). Use it to see the marginal effect and shape of a feature on the prediction.",
+        "vgi.doc_md": "**Partial dependence** \u2014 marginal effect of one feature.\n\n- `feature :=` (numeric only) swept over `grid_resolution :=` points\n- Identify the model with `model_name :=` or `model :=`; input is the background table\n- Returns `(feature_value, class, partial_dependence)` along the grid\n\n`class` is NULL for regression/binary, the class index for multiclass (one curve each).",
+        "vgi.example_queries": "[{\"sql\":\"SELECT class, feature_value, partial_dependence FROM xgboost.main.partial_dependence((SELECT * FROM xgboost.main.iris()), model_name := 'iris_clf', feature := 'petal_length_cm') ORDER BY feature_value\",\"description\":\"Partial dependence of 'iris_clf' on petal length\"}]",
+        "vgi.keywords": "[\"models\", \"inspection\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"feature_value\", \"type\": \"DOUBLE\", \"description\": \"Value the feature was set to.\"}, {\"name\": \"class\", \"type\": \"BIGINT\", \"description\": \"Class index (NULL for regression / the single binary curve).\"}, {\"name\": \"partial_dependence\", \"type\": \"DOUBLE\", \"description\": \"Average model output at this feature value.\"}]",
+        "vgi.title": "Partial Dependence"
+      },
+      null,
+      [
+        "data",
+        "model",
+        "model_name",
+        "grid_resolution",
+        "feature"
+      ],
+      [
+        "TABLE",
+        "BLOB",
+        "VARCHAR",
+        "BIGINT",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22745,
+      [
+        "SELECT class, feature_value, partial_dependence FROM xgboost.main.partial_dependence((SELECT * FROM xgboost.main.iris()), model_name := 'iris_clf', feature := 'petal_length_cm') ORDER BY feature_value"
+      ],
+      null,
+      [
+        "models",
+        "inspection"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "permutation_importance",
+      null,
+      "table",
+      "Model-agnostic feature importance: the drop in score when each feature is shuffled",
+      null,
+      {
+        "vgi.category": "interpretation",
+        "vgi.doc_llm": "Computes model-agnostic permutation importance over an evaluation table: for each feature, shuffle its values `n_repeats :=` times and measure the resulting drop in the model's score; a larger drop means a more important feature. Returns one ranked row per feature (`feature`, `importance_mean`, `importance_std`, `rank`; rank 1 = most important). Identify the model with `model_name :=` or `model :=`, name the held-out `target :=` column, and optionally set `scoring :=` and `random_state :=`. Unlike `feature_importance` this measures impact on real predictions and respects feature correlations, but it needs labelled data and is slower.",
+        "vgi.doc_md": "**Permutation importance** \u2014 model-agnostic, ranked.\n\n- Identify the model with `model_name :=` or `model :=`; name the `target :=` column\n- `n_repeats :=` shuffles per feature, optional `scoring :=`, `random_state :=`\n- Returns `(feature, importance_mean, importance_std, rank)`, sorted descending\n\nMeasures impact on real predictions (needs labels; slower than `feature_importance`).",
+        "vgi.example_queries": "[{\"sql\":\"SELECT feature, importance_mean, rank FROM xgboost.main.permutation_importance((SELECT * EXCLUDE (target_name) FROM xgboost.main.iris()), model_name := 'iris_clf', target := 'target') ORDER BY importance_mean DESC\",\"description\":\"Rank iris features by permutation importance for a stored model\"}]",
+        "vgi.keywords": "[\"models\", \"interpretation\", \"evaluation\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"feature\", \"type\": \"VARCHAR\", \"description\": \"Feature column name.\"}, {\"name\": \"importance_mean\", \"type\": \"DOUBLE\", \"description\": \"Mean drop in score when the feature is shuffled.\"}, {\"name\": \"importance_std\", \"type\": \"DOUBLE\", \"description\": \"Std-dev of the importance across repeats.\"}, {\"name\": \"rank\", \"type\": \"INTEGER\", \"description\": \"1-based rank by importance_mean (1 = most important).\"}]",
+        "vgi.title": "Permutation Importance"
+      },
+      null,
+      [
+        "data",
+        "target",
+        "model",
+        "scoring",
+        "random_state",
+        "n_repeats",
+        "model_name"
+      ],
+      [
+        "TABLE",
+        "VARCHAR",
+        "BLOB",
+        "VARCHAR",
+        "BIGINT",
+        "BIGINT",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22746,
+      [
+        "SELECT feature, importance_mean, rank FROM xgboost.main.permutation_importance((SELECT * EXCLUDE (target_name) FROM xgboost.main.iris()), model_name := 'iris_clf', target := 'target') ORDER BY importance_mean DESC"
+      ],
+      null,
+      [
+        "models",
+        "interpretation",
+        "evaluation"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "predict",
+      null,
+      "table",
+      "Score a table through a stored model, emitting predictions",
+      null,
+      {
+        "vgi.category": "models",
+        "vgi.doc_llm": "Streams a table through an already-fit XGBoost model and emits its predictions. Identify the model with either `model_name :=` (a registry name) or `model :=` (a `BLOB` from `fit`, passed via `SET VARIABLE` + `getvariable()` since a table function has only one subquery slot). Features are matched by name (order-independent; extra columns ignored; missing ones error at bind). The default output is the decoded `prediction` (the original label dtype for classifiers, value for regressors); the mutually exclusive modes `with_proba`, `output_margin`, and `pred_leaf` switch to per-class probabilities, the raw margin, or per-tree leaf indices respectively. Name an `id :=` column to carry it through.",
+        "vgi.doc_md": "**Predict with a stored model** \u2014 score a table row by row.\n\n- Identify the model with `model_name :=` *or* `model :=` (a `fit` `BLOB`)\n- Features aligned by name; an optional `id :=` is carried through\n- Default output: `prediction` (label or value)\n- `with_proba := true` \u2192 one `proba_<class>` column per class; `output_margin := true` \u2192 a `margin` `DOUBLE`; `pred_leaf := true` \u2192 a `leaf` `INTEGER[]` (one index per tree) \u2014 the three modes are mutually exclusive",
+        "vgi.example_queries": "[{\"sql\":\"SELECT sample_id, prediction FROM xgboost.main.predict((SELECT * FROM xgboost.main.iris()), model_name => 'iris_clf', id => 'sample_id')\",\"description\":\"Predict with the stored 'iris_clf' model\"}]",
+        "vgi.keywords": "[\"models\", \"supervised\", \"inference\"]",
+        "vgi.result_dynamic_columns_md": "If `id :=` names a column it is carried through first. The prediction column depends on the model task and on the prediction mode; `with_proba := true` on a classifier adds one `proba_<class>` `DOUBLE` column per class.\n\n### Classifier (default)\n\n| Name | Type | Description |\n| --- | --- | --- |\n| sample_id | BIGINT | Column named by `id :=` (here `sample_id`), carried through first as-is. |\n| prediction | BIGINT | Predicted class label (`VARCHAR` for string labels). |\n\n### Regressor (default)\n\n| Name | Type | Description |\n| --- | --- | --- |\n| sample_id | BIGINT | Column named by `id :=` (here `sample_id`), carried through first as-is. |\n| prediction | DOUBLE | Predicted value. |\n\n### output_margin := true\n\n| Name | Type | Description |\n| --- | --- | --- |\n| sample_id | BIGINT | Column named by `id :=` (here `sample_id`), carried through first as-is. |\n| margin | DOUBLE | Raw (untransformed) margin score. |\n\n### pred_leaf := true\n\n| Name | Type | Description |\n| --- | --- | --- |\n| sample_id | BIGINT | Column named by `id :=` (here `sample_id`), carried through first as-is. |\n| leaf | INTEGER[] | Leaf index reached in each tree, one element per tree. |",
+        "vgi.title": "Predict"
+      },
+      null,
+      [
+        "data",
+        "with_proba",
+        "output_margin",
+        "model_name",
+        "pred_leaf",
+        "model",
+        "id"
+      ],
+      [
+        "TABLE",
+        "BOOLEAN",
+        "BOOLEAN",
+        "VARCHAR",
+        "BOOLEAN",
+        "BLOB",
+        "VARCHAR"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22747,
+      [
+        "SELECT sample_id, prediction FROM xgboost.main.predict((SELECT * FROM xgboost.main.iris()), model_name => 'iris_clf', id => 'sample_id')"
+      ],
+      null,
+      [
+        "models",
+        "supervised",
+        "inference"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "randomized_search",
+      null,
+      "table",
+      "Cross-validated randomized search: sample n_iter hyperparameter combinations",
+      null,
+      {
+        "vgi.category": "tuning",
+        "vgi.doc_llm": "Runs scikit-learn's `RandomizedSearchCV` over a training table, sampling `n_iter :=` random hyperparameter combinations (capped at the grid size) instead of exhausting the grid \u2014 cheaper than `grid_search` for large spaces. Same tagged-union argument: `estimator := union_value(<estimator> := {param: [values], ...})`; omitted params stay at their default. Set `target :=`, `cv :=` folds, `random_state :=` for reproducible sampling, optional `scoring :=`. Returns the same leaderboard (`params`, `mean_test_score`, `std_test_score`, `rank`) with the refit best model as a `model` `BLOB` on the rank-1 row (`WHERE model IS NOT NULL`); `model_name :=` also persists it.",
+        "vgi.doc_md": "**Cross-validated randomized search** \u2014 sample the hyperparameter space.\n\n- `estimator := union_value(<estimator> := {param: [values], ...})` (discriminated union)\n- `n_iter :=` combinations to sample (capped at grid size), `random_state :=` for reproducibility\n- `target :=`, `cv :=` folds, optional `scoring :=`, optional `model_name :=`\n\nCheaper than `grid_search` on large grids; best model is a `model` `BLOB` on the rank-1 row.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT params, mean_test_score, rank FROM xgboost.main.randomized_search((SELECT * FROM xgboost.main.iris()), target := 'target', id := 'sample_id', n_iter := 4, estimator := union_value(xgb_classifier := {'n_estimators': [50, 100, 200], 'max_depth': [3, 5, 8]})) ORDER BY rank\",\"description\":\"Randomized-search an XGBoost classifier on iris\"}]",
+        "vgi.keywords": "[\"models\", \"supervised\", \"tuning\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"estimator\", \"type\": \"VARCHAR\", \"description\": \"Estimator that was searched.\"}, {\"name\": \"params\", \"type\": \"VARCHAR\", \"description\": \"This combination's hyperparameters (JSON).\"}, {\"name\": \"mean_test_score\", \"type\": \"DOUBLE\", \"description\": \"Mean cross-validated score.\"}, {\"name\": \"std_test_score\", \"type\": \"DOUBLE\", \"description\": \"Std-dev of the cross-validated score.\"}, {\"name\": \"rank\", \"type\": \"BIGINT\", \"description\": \"Rank by mean score (1 = best).\"}, {\"name\": \"model\", \"type\": \"BLOB\", \"description\": \"The refit best model as a BLOB (only on the rank-1 row).\"}]",
+        "vgi.title": "Randomized Search"
+      },
+      null,
+      [
+        "data",
+        "random_state",
+        "n_iter",
+        "model_name",
+        "target",
+        "id",
+        "estimator",
+        "scoring",
+        "cv"
+      ],
+      [
+        "TABLE",
+        "BIGINT",
+        "BIGINT",
+        "VARCHAR",
+        "VARCHAR",
+        "VARCHAR",
+        "UNION(xgb_classifier STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_regressor STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_rf_classifier STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]), xgb_rf_regressor STRUCT(n_estimators BIGINT[], max_depth BIGINT[], learning_rate DOUBLE[], subsample DOUBLE[], colsample_bytree DOUBLE[], min_child_weight DOUBLE[], gamma DOUBLE[], reg_alpha DOUBLE[], reg_lambda DOUBLE[], objective VARCHAR[], booster VARCHAR[], tree_method VARCHAR[], random_state BIGINT[]))",
+        "VARCHAR",
+        "BIGINT"
+      ],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22748,
+      [
+        "SELECT params, mean_test_score, rank FROM xgboost.main.randomized_search((SELECT * FROM xgboost.main.iris()), target := 'target', id := 'sample_id', n_iter := 4, estimator := union_value(xgb_classifier := {'n_estimators': [50, 100, 200], 'max_depth': [3, 5, 8]})) ORDER BY rank"
+      ],
+      null,
+      [
+        "models",
+        "supervised",
+        "tuning"
+      ]
+    ],
+    [
+      "xgboost",
+      "22592",
+      "main",
+      "wine",
+      null,
+      "table",
+      "Wine recognition dataset (178 samples, 13 features, 3 classes)",
+      null,
+      {
+        "vgi.category": "datasets",
+        "vgi.doc_llm": "Zero-argument table function returning the wine-recognition dataset: 178 rows, one per wine sample, with 13 numeric chemical-analysis features (alcohol, malic acid, ash, magnesium, total phenols, flavanoids, colour intensity, hue, proline, ...), an integer `target` (0/1/2), the cultivar `target_name`, and a `sample_id`. A balanced 3-class dataset over continuous features \u2014 handy for multiclass classification demos.",
+        "vgi.doc_md": "**Wine dataset** \u2014 178 wines from three cultivars.\n\n- `sample_id` `INTEGER` \u2014 0-based row index\n- 13 `DOUBLE` chemical features (alcohol, phenols, colour intensity, proline, ...)\n- `target` `INTEGER` (0\u20132) and `target_name` the cultivar\n\nTakes no arguments. A continuous-feature 3-class classification benchmark.",
+        "vgi.example_queries": "[{\"sql\":\"SELECT target_name, round(avg(alcohol), 2) AS mean_alcohol FROM xgboost.main.wine() GROUP BY target_name ORDER BY target_name\",\"description\":\"Mean alcohol content per wine cultivar\"}]",
+        "vgi.keywords": "[\"datasets\", \"classification\"]",
+        "vgi.result_columns_schema": "[{\"name\": \"sample_id\", \"type\": \"INTEGER\", \"description\": \"Row index within the dataset (0-based).\"}, {\"name\": \"alcohol\", \"type\": \"DOUBLE\", \"description\": \"Feature: alcohol.\"}, {\"name\": \"malic_acid\", \"type\": \"DOUBLE\", \"description\": \"Feature: malic_acid.\"}, {\"name\": \"ash\", \"type\": \"DOUBLE\", \"description\": \"Feature: ash.\"}, {\"name\": \"alcalinity_of_ash\", \"type\": \"DOUBLE\", \"description\": \"Feature: alcalinity_of_ash.\"}, {\"name\": \"magnesium\", \"type\": \"DOUBLE\", \"description\": \"Feature: magnesium.\"}, {\"name\": \"total_phenols\", \"type\": \"DOUBLE\", \"description\": \"Feature: total_phenols.\"}, {\"name\": \"flavanoids\", \"type\": \"DOUBLE\", \"description\": \"Feature: flavanoids.\"}, {\"name\": \"nonflavanoid_phenols\", \"type\": \"DOUBLE\", \"description\": \"Feature: nonflavanoid_phenols.\"}, {\"name\": \"proanthocyanins\", \"type\": \"DOUBLE\", \"description\": \"Feature: proanthocyanins.\"}, {\"name\": \"color_intensity\", \"type\": \"DOUBLE\", \"description\": \"Feature: color_intensity.\"}, {\"name\": \"hue\", \"type\": \"DOUBLE\", \"description\": \"Feature: hue.\"}, {\"name\": \"od280_od315_of_diluted_wines\", \"type\": \"DOUBLE\", \"description\": \"Feature: od280/od315_of_diluted_wines.\"}, {\"name\": \"proline\", \"type\": \"DOUBLE\", \"description\": \"Feature: proline.\"}, {\"name\": \"target\", \"type\": \"INTEGER\", \"description\": \"Integer class label (0-based).\"}, {\"name\": \"target_name\", \"type\": \"VARCHAR\", \"description\": \"Human-readable class name (one of: class_0, class_1, class_2).\"}]",
+        "vgi.title": "Wine"
+      },
+      null,
+      [],
+      [],
+      null,
+      null,
+      null,
+      true,
+      null,
+      22749,
+      [
+        "SELECT target_name, round(avg(alcohol), 2) AS mean_alcohol FROM xgboost.main.wine() GROUP BY target_name ORDER BY target_name"
+      ],
+      null,
+      [
+        "datasets",
+        "classification"
+      ]
+    ]
+  ]
+}
