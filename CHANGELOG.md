@@ -6,18 +6,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Changed
-- Bumped the `vgi-python` floor to `>=0.8.2`.
-- Bumped the `vgi-python` floor (pyproject, Makefile, Dockerfile) and `uv.lock` to
-  `0.51.1`: `0.50.x` speaks VGI protocol 3.2 and fails ATTACH against the 3.3
-  community extension.
-
-### Added
-- Composed examples joining `cross_val_predict` out-of-fold predictions back to
-  `iris` (confusion matrix) and `diabetes` (held-out error per BMI quartile), plus
-  an out-of-fold agent test task on `breast_cancer`.
-
-## [0.1.0] - 2026-06-22
+## [0.1.0] - 2026-11-14
 
 ### Added
 - Initial `vgi-xgboost` VGI worker exposing XGBoost to DuckDB/SQL.
@@ -32,6 +21,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Quality gate: ruff + mypy, pytest unit tests, and the `test/sql/*.test`
   integration suite over three transports (stdio, HTTP, in-process haybarn).
 - GitHub Actions CI and Dependabot (pip / actions / docker).
+- Composed examples joining `cross_val_predict` out-of-fold predictions back to
+  `iris` (confusion matrix) and `diabetes` (held-out error per BMI quartile), plus
+  an out-of-fold agent test task on `breast_cancer`.
+- Requires `vgi-python>=0.51.1` (VGI protocol 3.3); `0.50.x` speaks protocol 3.2
+  and fails ATTACH against the 3.3 community extension.
 
 [Unreleased]: https://github.com/Query-farm/vgi-xgboost/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/Query-farm/vgi-xgboost/releases/tag/v0.1.0
