@@ -181,7 +181,7 @@ class LocalDiskStore(ModelStore):
         for meta_path in sorted(self.root.glob("*.json")):
             try:
                 out.append(ModelMetadata.from_dict(json.loads(meta_path.read_text())))
-            except (json.JSONDecodeError, OSError):
+            except json.JSONDecodeError, OSError:
                 continue
         return out
 

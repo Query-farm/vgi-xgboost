@@ -9,13 +9,14 @@
 #   make test-cloud   # SQL tests against the deployed Fly.io service
 #   make deploy       # build locally, smoke-test, push, deploy to Fly.io
 
-VGI_BUILD_DIR  ?= $(HOME)/Development/vgi/build/release
-TEST_RUNNER     = $(VGI_BUILD_DIR)/test/unittest
+# SQL tests run on the published haybarn-unittest with the community vgi extension
+# (ci/run-sqllogic.sh installs both; no local DuckDB/vgi builds).
+TEST_RUNNER     = ci/run-sqllogic.sh
 TEST_DIR        = .
 TEST_PATTERN    = test/sql/*
 
 # Worker paths (overridable)
-WORKER_STDIO   ?= uv run --python 3.13 xgboost_worker.py
+WORKER_STDIO   ?= uv run --python 3.14 xgboost_worker.py
 WORKER_HTTP    ?= http://localhost:8000
 WORKER_CLOUD   ?= https://$(FLY_APP).fly.dev
 HTTP_PORT      ?= 8000
@@ -29,7 +30,7 @@ TEST_MODELS_DIR ?= $(CURDIR)/.test-models
 .PHONY: lint test pytest test-sql test-stdio test-http test-cloud build push smoke-test deploy venv
 
 venv:
-	uv venv --python 3.13
+	uv venv --python 3.14
 	uv pip install --python .venv \
 		"vgi-python[http,oauth]>=0.51.1" \
 		"vgi-rpc[sentry]>=0.53.1" \

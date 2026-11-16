@@ -68,7 +68,15 @@ REGRESSION = "regression"
 # Defaults shared by every estimator: a fixed seed, and native categorical
 # support via the histogram tree method (so string features work without
 # one-hot encoding and missing values flow through as NaN).
-_COMMON_DEFAULTS: dict[str, Any] = {"random_state": 0, "enable_categorical": True, "tree_method": "hist"}
+# n_jobs=1: XGBoost otherwise uses every core per fit. The worker serves SQL calls that
+# DuckDB may issue in parallel, and the data per call is usually small, so all-core
+# training oversubscribes the machine (as vgi-lightgbm also pins). Pass n_jobs to override.
+_COMMON_DEFAULTS: dict[str, Any] = {
+    "random_state": 0,
+    "enable_categorical": True,
+    "tree_method": "hist",
+    "n_jobs": 1,
+}
 
 # name -> (task, estimator class, default kwargs)
 _ESTIMATORS: dict[str, tuple[str, type, dict[str, Any]]] = {

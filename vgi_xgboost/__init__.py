@@ -25,4 +25,17 @@ catalog and runs the worker.
 
 from __future__ import annotations
 
+import os as _os
+
+# One thread per call by default. XGBoost (OpenMP) and numpy/scipy (BLAS) otherwise size
+# their pools to every core, and DuckDB already runs worker calls in parallel, so all-core
+# pools oversubscribe the machine and make small fits slower. VGI_XGBOOST_THREADS raises it.
+_THREADS = max(1, int(_os.environ.get("VGI_XGBOOST_THREADS", "1") or "1"))
+_os.environ.setdefault("OMP_NUM_THREADS", str(_THREADS))  # read when xgboost loads OpenMP
+
+from threadpoolctl import threadpool_limits as _threadpool_limits  # noqa: E402
+
+_threadpool_limits(limits=_THREADS)  # BLAS pools that are already loaded (vgi imports numpy)
+
+
 __version__ = "0.1.0"

@@ -1,7 +1,7 @@
 # /// script
-# requires-python = ">=3.13"
+# requires-python = ">=3.14"
 # dependencies = [
-#     "vgi-python[http,oauth]>=0.52.0",
+#     "vgi-python[http,oauth]>=0.52.2,<0.53",
 #     "vgi-rpc[sentry]>=0.53.1",
 #     "xgboost>=2.0",
 #     "scikit-learn>=1.5",
