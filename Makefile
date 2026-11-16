@@ -30,7 +30,7 @@ FLY_APP        ?= vgi-xgboost
 venv:
 	uv venv --python 3.14
 	uv pip install --python .venv \
-		"vgi-python[http,oauth]>=0.51.1" \
+		"vgi-python[http,oauth]>=0.52.2,<0.53" \
 		"vgi-rpc[sentry]>=0.53.1" \
 		"xgboost>=2.0" "scikit-learn>=1.5" numpy pandas \
 		pytest ruff mypy haybarn

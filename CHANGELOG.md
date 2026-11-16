@@ -6,6 +6,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## 0.1.1 (2026-11-16)
+
+- Bump vgi-python to 0.52.2 (`>=0.52.2,<0.53`).
+- Python 3.14 (requires-python floor, CI, Docker image and tooling).
+- SQL integration tests run on every transport (stdio, launch, http) through
+  the starter's `ci/run-integration.sh`; `make check` runs all three.
+- One thread per call by default (XGBoost n_jobs and OpenMP/BLAS pools); `VGI_XGBOOST_THREADS` raises it.
+
 ## [0.1.0] - 2026-11-14
 
 ### Added
