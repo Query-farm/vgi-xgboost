@@ -180,23 +180,22 @@ typed **discriminated-union** estimator arg (see below), not JSON.
 make venv          # .venv with vgi + xgboost + scikit-learn (from PyPI) + ruff/mypy
 make lint          # ruff + mypy (config in pyproject.toml; both run clean)
 make pytest        # in-process unit tests (fast; uses tests/harness.py)
-make test-stdio    # SQL tests, worker as subprocess  (authoritative)
-make test-http     # SQL tests against a local HTTP server
+make test-sql      # SQL tests over stdio, launch and http  (authoritative)
 ```
 
 - **SQL tests are authoritative.** Unit tests call classmethods directly and can
-  pass while the real RPC path is broken. Always run `test-stdio`.
-- The same `test/sql/*.test` files run over **three transports**: stdio and HTTP
-  (via DuckDB's `unittest` runner at `$(VGI_BUILD_DIR)/test/unittest`, the local
-  authority) and **in-process via haybarn** (`make test-sql`). The haybarn path
-  is what CI uses — it `INSTALL vgi FROM community` on Query Farm's DuckDB build,
-  so it needs no custom binary. `tests/sqllogic.py` is a small subset
-  sqllogictest runner; if you use a directive it doesn't support, extend it.
-- `make test-stdio` / `test-http` point `XGBOOST_MODELS_DIR` at an isolated
-  `.test-models/` so the registry tests don't pollute `./models`.
-- **CI:** `.github/workflows/ci.yml` runs ruff + mypy + unit + haybarn SQL +
-  Docker smoke. Dependabot watches pip / actions / docker. Keep all five CI
-  steps green; the haybarn SQL step needs network (community extension fetch).
+  pass while the real RPC path is broken. Always run `make test-sql`.
+- `make test-sql` runs the same `test/sql/*.test` files over **three transports**
+  (stdio, launch = one pooled worker on an AF_UNIX socket, and http) through
+  `ci/run-integration.sh`, adapted from the vgi-starter template: the published
+  `haybarn-unittest` (installed into `.tools/`) plus the signed community `vgi`
+  extension, no custom DuckDB build. `make test-sql TRANSPORTS=launch` runs one;
+  `ci/worker` is the worker executable it drives.
+- The script points `XGBOOST_MODELS_DIR` at an isolated per-run directory so the
+  registry tests don't pollute `./models`.
+- **CI:** `.github/workflows/ci.yml` runs ruff + mypy + unit, the SQL suite as an
+  stdio/launch/http matrix, vgi-lint and the Docker smoke. Keep all jobs green;
+  the SQL jobs need network (community extension fetch).
 
 ## Deployment (Fly.io)
 

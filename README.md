@@ -234,20 +234,19 @@ logs a warning (visible in `duckdb_logs()`) if the worker's version differs.
 make venv          # create .venv with vgi + xgboost + scikit-learn (from PyPI)
 make lint          # ruff + mypy
 make pytest        # unit tests
-make test-sql      # SQL tests in-process via haybarn (no custom DuckDB build needed)
-make test-stdio    # SQL tests with the worker as a subprocess (custom unittest runner)
-make test-http     # SQL tests against a local HTTP server
+make test-sql      # SQL tests over stdio, launch and http (haybarn-unittest + community vgi)
+make test-stdio    # SQL tests over stdio only
+make test-http     # SQL tests over HTTP only
 ```
 
-The `test/sql/*.test` files are the integration suite. `test-stdio`/`test-http`
-run them with DuckDB's `unittest` runner built with the VGI extension
-(`VGI_BUILD_DIR`) and are the local authority. `test-sql` replays the **same**
-files in-process against the `haybarn` DuckDB distribution (which can
-`INSTALL vgi FROM community`), so they also run on a stock CI runner.
+The `test/sql/*.test` files are the integration suite. `make test-sql` runs them
+through `ci/run-integration.sh` with the published `haybarn-unittest` runner and
+the signed community `vgi` extension (no custom DuckDB build), once per transport:
+stdio, launch (one pooled worker on an AF_UNIX socket) and HTTP.
 
 ### Continuous integration
-`.github/workflows/ci.yml` runs ruff, mypy, the unit tests, the haybarn SQL
-suite, and a Docker build + `/health` smoke test on every push and PR.
+`.github/workflows/ci.yml` runs ruff, mypy, the unit tests, the SQL
+suite over stdio/launch/http, and a Docker build + `/health` smoke test on every push and PR.
 Dependabot (`.github/dependabot.yml`) keeps the Python deps, GitHub Actions, and
 the Docker base image up to date weekly.
 

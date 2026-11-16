@@ -15,4 +15,3 @@ models/
 .coverage
 .test-models/
 .tools/
-test/_sqllogic_stage/

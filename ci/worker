@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# The worker as a single executable path (ci/run-integration.sh's WORKER): the
+# project venv's interpreter on xgboost_worker.py. No arguments = stdio; the vgi
+# SDK handles --http / --unix (launch) itself.
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+exec "$REPO/.venv/bin/python" "$REPO/xgboost_worker.py" "$@"

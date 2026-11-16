@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   quality:
-    name: lint • types • unit • sql
+    name: lint • types • unit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -34,13 +34,8 @@ jobs:
         run: mypy
 
       - name: Unit tests
-        run: pytest tests/ -o "addopts=" -q --ignore=tests/test_sql_haybarn.py
+        run: pytest tests/ -o "addopts=" -q
 
-      - name: SQL integration tests (haybarn + vgi community extension)
-        env:
-          VGI_SQL_HAYBARN: "1"
-          VGI_SIGNING_KEY: dev
-        run: pytest tests/test_sql_haybarn.py -o "addopts=" -q
 
   lint-metadata:
     name: vgi-lint-check (metadata quality)
@@ -75,3 +70,43 @@ jobs:
           location: .venv/bin/python xgboost_worker.py
           execute: true
           fail-on: error
+
+  # The SQL suite (test/sql/*.test) through the published haybarn-unittest and the
+  # signed community `vgi` extension, over every transport (ci/run-integration.sh,
+  # adapted from the vgi-starter template): stdio (DuckDB spawns the worker per
+  # connection), launch (DuckDB starts it once on an AF_UNIX socket and pools
+  # connections) and http (the worker serves --http).
+  integration:
+    name: SQL E2E (${{ matrix.transport }}) on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        transport: [stdio, launch, http]
+    env:
+      UV_PYTHON: "3.14"
+      HAYBARN_VERSION: "2.0.0rc11"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Build the worker
+        run: uv sync --locked --all-extras
+
+      - name: Install the SQL test runner
+        run: |
+          uv venv .tools
+          uv pip install -p .tools "haybarn-unittest==${HAYBARN_VERSION}"
+
+      - name: Run test/sql over ${{ matrix.transport }}
+        run: |
+          WORKER="$PWD/ci/worker" \
+          HAYBARN_UNITTEST="$PWD/.tools/bin/haybarn-unittest" \
+          TRANSPORT=${{ matrix.transport }} ci/run-integration.sh
