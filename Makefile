@@ -15,7 +15,7 @@
 # `vgi` extension, over stdio, launch (AF_UNIX, pooled) and http, with an isolated
 # model registry per run. CI runs the same script per transport. ci/worker execs
 # the venv interpreter on xgboost_worker.py.
-HAYBARN_VERSION  ?= 2.0.0rc11
+HAYBARN_VERSION  ?= 2.0.1rc3
 WORKER           ?= $(CURDIR)/ci/worker
 TOOLS            := $(CURDIR)/.tools
 HAYBARN_UNITTEST := $(TOOLS)/bin/haybarn-unittest

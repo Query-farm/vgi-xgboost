@@ -49,7 +49,7 @@ RUN apt-get update \
 # vgi-python / vgi-rpc are published on PyPI, so install everything directly —
 # no vendoring or local wheel building required.
 RUN pip install \
-        "vgi-python[http,oauth]>=0.52.2,<0.53" \
+        "vgi-python[http,oauth]>=0.55.2,<0.56" \
         "vgi-rpc[sentry]>=0.53.1" \
         "xgboost>=2.0" \
         "scikit-learn>=1.5" \
@@ -80,7 +80,7 @@ EXPOSE 8000
 # Readiness probe for HTTP mode (mirrors the Fly.io /health check). Inert for a
 # short-lived stdio container, which has no HTTP server.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD curl -fsS "http://localhost:${PORT:-8000}/health" || exit 1
+    CMD curl -fsSI "http://localhost:${PORT:-8000}/health" || exit 1
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["http"]

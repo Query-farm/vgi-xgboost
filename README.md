@@ -26,6 +26,8 @@ SELECT * FROM xgboost.fit(
 SELECT * FROM xgboost.predict((SELECT * FROM new_flowers), model_name := 'iris_clf', id := 'id');
 ```
 
+vgi-xgboost 0.2.0 speaks VGI protocol 3.4, so it needs Haybarn 2.0.1 or newer (Haybarn 2.0.0 loads a 3.3 `vgi` extension that cannot attach it).
+
 ## How it maps XGBoost onto SQL
 
 XGBoost is built around stateful *fit / predict* estimators; SQL is set-oriented.

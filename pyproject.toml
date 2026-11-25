@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vgi-xgboost"
-version = "0.1.1"
+version = "0.2.0"
 description = "A VGI worker exposing XGBoost (train/predict registry + interpretation) to DuckDB/SQL"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "threadpoolctl>=3.1",
-    "vgi-python[http,oauth]>=0.52.2,<0.53",
+    "vgi-python[http,oauth]>=0.55.2,<0.56",
     "vgi-rpc[sentry]>=0.53.1",
     "xgboost>=2.0",
     "scikit-learn>=1.5",
@@ -19,6 +19,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# HTTP-serving extra installed by the Docker image (`pip install '.[serve]'`):
+# `http` so the container can serve `--http` (/health + VGI RPC), plus `oauth`
+# (JWT verification) so the image can run in Orchard hosted mode
+# (`VGI_ORCHARD_HOSTED=1` with VGI_JWT_ISSUER/AUDIENCE/JWKS_URI and VGI_SIGNING_KEY).
+serve = [
+    "vgi-python[http,oauth]>=0.55.2,<0.56",
+]
 dev = ["pytest", "ruff", "mypy", "haybarn"]
 
 [tool.setuptools]

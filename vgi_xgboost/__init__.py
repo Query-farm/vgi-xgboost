@@ -38,4 +38,4 @@ from threadpoolctl import threadpool_limits as _threadpool_limits  # noqa: E402
 _threadpool_limits(limits=_THREADS)  # BLAS pools that are already loaded (vgi imports numpy)
 
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
